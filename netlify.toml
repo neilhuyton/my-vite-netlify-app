@@ -5,8 +5,8 @@
 
 [dev]
   command = "npm run dev"
-  targetPort = 5173  # Vite's default port
-  port = 8888       # Netlify Dev's default port
+  targetPort = 5173
+  port = 8888
   publish = "dist"
   autoLaunch = false
 

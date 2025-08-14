@@ -1,3 +1,4 @@
+// netlify/functions/hello.ts
 import { Context } from "@netlify/functions";
 
 interface NetlifyEvent {

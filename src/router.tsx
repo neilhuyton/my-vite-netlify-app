@@ -1,5 +1,9 @@
 // src/router.tsx
-import { createRouter, createRootRoute, createRoute } from "@tanstack/react-router";
+import {
+  createRouter,
+  createRootRoute,
+  createRoute,
+} from "@tanstack/react-router";
 import { App } from "./App";
 import WeightList from "./components/WeightList";
 import WeightChart from "./components/WeightChart";

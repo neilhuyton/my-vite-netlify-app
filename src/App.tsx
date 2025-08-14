@@ -1,33 +1,17 @@
 // src/App.tsx
-import { useState, useEffect } from 'react';
+import { trpc } from './trpc'; // Updated import
 import './App.css';
 
-interface ApiResponse {
-  message: string;
-}
-
 function App() {
-  const [message, setMessage] = useState<string>('');
+  const { data, isLoading, isError } = trpc.hello.useQuery();
 
-  useEffect(() => {
-    fetch('/api/hello')
-      .then((res) => {
-        if (!res.ok) {
-          return res.text().then((text) => {
-            console.error('Response:', text);
-            throw new Error(`HTTP ${res.status}`);
-          });
-        }
-        return res.json() as Promise<ApiResponse>;
-      })
-      .then((data) => setMessage(data.message))
-      .catch((err) => console.error('Error:', err));
-  }, []);
+  if (isLoading) return <div>Loading...</div>;
+  if (isError) return <div>Error</div>;
 
   return (
     <div className="App">
-      <h1>Vite + Netlify Functions</h1>
-      <p>{message || 'Loading...'}</p>
+      <h1>Vite + tRPC + Netlify Functions</h1>
+      <p>{data?.message || 'No message'}</p>
     </div>
   );
 }

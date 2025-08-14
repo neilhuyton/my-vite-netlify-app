@@ -1,10 +1,11 @@
 // src/App.tsx
 import { useState } from "react";
-import { Box, Toolbar } from "@mui/material";
+import { Box, Toolbar, Button, Typography } from "@mui/material";
 import { Outlet, useLocation } from "@tanstack/react-router";
 import Sidebar from "./components/Sidebar";
 import AppHeader from "./components/AppHeader";
 import WeightForm from "./components/WeightForm";
+import { useAuth } from "./context/AuthContext";
 import { trpc } from "./trpc";
 
 export const App = () => {
@@ -12,6 +13,7 @@ export const App = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [weight, setWeight] = useState("");
   const [error, setError] = useState("");
+  const { user, logout } = useAuth();
   const { pathname } = useLocation();
 
   const addWeight = trpc.addWeight.useMutation({
@@ -19,7 +21,7 @@ export const App = () => {
       setWeight("");
       setError("");
     },
-    onError: (error) => setError(error.message),
+    onError: (err) => setError(err.message),
   });
 
   const handleSubmit = (value: string) => {
@@ -40,17 +42,28 @@ export const App = () => {
         locationPathname={pathname}
         drawerWidth={drawerWidth}
       />
-      <Box component="main" sx={{ flexGrow: 1, p: 3, width: { xs: "100%", sm: `calc(100% - ${drawerWidth}px)` } }}>
+      <Box
+        component="main"
+        sx={{ flexGrow: 1, p: 3, width: { xs: "100%", sm: `calc(100% - ${drawerWidth}px)` } }}
+      >
         <Toolbar />
-        <WeightForm
-          weight={weight}
-          setWeight={setWeight}
-          error={error}
-          isPending={addWeight.isPending}
-          isSuccess={addWeight.isSuccess}
-          successMessage={addWeight.data?.message}
-          onSubmit={handleSubmit}
-        />
+        {user && (
+          <>
+            <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
+              <Typography variant="h6">Welcome, {user.email}</Typography>
+              <Button onClick={logout}>Logout</Button>
+            </Box>
+            <WeightForm
+              weight={weight}
+              setWeight={setWeight}
+              error={error}
+              isPending={addWeight.isPending}
+              isSuccess={addWeight.isSuccess}
+              successMessage={addWeight.data?.message}
+              onSubmit={handleSubmit}
+            />
+          </>
+        )}
         <Outlet />
       </Box>
     </Box>

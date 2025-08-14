@@ -18,7 +18,6 @@ import {
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { trpc } from "../trpc";
-import { GetWeightsResponse } from "../types";
 import { format } from "date-fns";
 
 export default function WeightList() {
@@ -26,9 +25,7 @@ export default function WeightList() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
 
-  const { data, isLoading, isError, error, refetch } = trpc.getWeights.useQuery(undefined, {
-    select: (data) => data as unknown as GetWeightsResponse, // Safer type assertion
-  });
+  const { data, isLoading, isError, error, refetch } = trpc.getWeights.useQuery();
 
   const deleteWeight = trpc.deleteWeight.useMutation({ onSuccess: () => refetch() });
 
@@ -47,12 +44,8 @@ export default function WeightList() {
               <TableHead>
                 <TableRow>
                   <TableCell sx={{ fontWeight: 600 }}>Date</TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 600 }}>
-                    Weight (kg)
-                  </TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 600 }}>
-                    Actions
-                  </TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 600 }}>Weight (kg)</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 600 }}>Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -74,9 +67,7 @@ export default function WeightList() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={3} align="center">
-                      No measurements
-                    </TableCell>
+                    <TableCell colSpan={3} align="center">No measurements</TableCell>
                   </TableRow>
                 )}
               </TableBody>

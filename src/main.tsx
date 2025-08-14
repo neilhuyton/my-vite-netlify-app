@@ -1,13 +1,10 @@
 // src/main.tsx
 import React, { useState, useMemo } from "react";
 import ReactDOM from "react-dom/client";
-import { QueryClientProvider } from "@tanstack/react-query";
-import { RouterProvider } from "@tanstack/react-router";
-import { trpc, trpcClient, queryClient } from "./trpc";
-import { router } from "./router";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
-import { ThemeContext } from "./ThemeContext"; // Import the new context
+import { ThemeContext } from "./ThemeContext";
+import { Root } from "./Root";
 import "./index.css";
 
 const getInitialTheme = (): "light" | "dark" => {
@@ -15,7 +12,7 @@ const getInitialTheme = (): "light" | "dark" => {
   return savedTheme === "dark" ? "dark" : "light";
 };
 
-export const AppWrapper = () => {
+const AppWrapper = () => {
   const [themeMode, setThemeMode] = useState<"light" | "dark">(
     getInitialTheme()
   );
@@ -82,9 +79,7 @@ export const AppWrapper = () => {
               },
             },
           },
-          MuiButton: {
-            styleOverrides: { root: { textTransform: "none" } },
-          },
+          MuiButton: { styleOverrides: { root: { textTransform: "none" } } },
           MuiListItemButton: {
             styleOverrides: {
               root: {
@@ -93,8 +88,8 @@ export const AppWrapper = () => {
                     themeMode === "light"
                       ? "rgba(25, 118, 210, 0.12)"
                       : "rgba(144, 202, 249, 0.16)",
+                  py: 1.5,
                 },
-                py: 1.5,
               },
             },
           },
@@ -103,19 +98,12 @@ export const AppWrapper = () => {
     [themeMode]
   );
 
-  // Debugging: Log the context being provided
-  console.log("main.tsx: Theme context:", { toggleTheme });
-
   return (
     <React.StrictMode>
       <ThemeContext.Provider value={{ toggleTheme }}>
         <ThemeProvider theme={theme}>
           <CssBaseline />
-          <trpc.Provider client={trpcClient} queryClient={queryClient}>
-            <QueryClientProvider client={queryClient}>
-              <RouterProvider router={router} /> {/* Removed context prop */}
-            </QueryClientProvider>
-          </trpc.Provider>
+          <Root />
         </ThemeProvider>
       </ThemeContext.Provider>
     </React.StrictMode>

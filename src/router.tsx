@@ -1,32 +1,32 @@
 // src/router.tsx
 import { createRouter, createRootRoute, createRoute } from "@tanstack/react-router";
-import { WeightList, WeightChart, App } from "./App";
+import { App } from "./App";
+import WeightList from "./components/WeightList";
+import WeightChart from "./components/WeightChart";
 
+// Define the root route
 const rootRoute = createRootRoute({
   component: App,
 });
 
+// Define the index route (default route at '/')
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: "/",
+  path: "/", // Index route for the root path
   component: WeightList,
 });
 
-const listRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "list",
-  component: WeightList,
-});
-
+// Define other child routes
 const graphRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "graph",
   component: WeightChart,
 });
 
-const routeTree = rootRoute.addChildren([indexRoute, listRoute, graphRoute]);
+// Create the route tree
+const routeTree = rootRoute.addChildren([indexRoute, graphRoute]);
 
-export const router = createRouter({
-  routeTree,
-  defaultNotFoundComponent: () => <div>404 Not Found</div>,
-});
+// Create the router
+export const router = createRouter({ routeTree });
+
+export default router;

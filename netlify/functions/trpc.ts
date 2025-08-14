@@ -2,57 +2,78 @@
 import { initTRPC } from '@trpc/server';
 import { fetchRequestHandler } from '@trpc/server/adapters/fetch';
 import { HandlerEvent, HandlerContext } from '@netlify/functions';
+import { PrismaClient } from '@prisma/client';
 
-// Define the tRPC context
+const prisma = new PrismaClient({
+  log: ['query', 'info', 'warn', 'error'],
+});
+
+console.log('DATABASE_URL in function:', process.env.DATABASE_URL);
+
 type TRPCContext = {
   event: HandlerEvent;
   context: HandlerContext;
+  prisma: PrismaClient;
 };
 
-// Initialize tRPC
 const t = initTRPC.context<TRPCContext>().create();
 
-// Create a router
 export const appRouter = t.router({
-  hello: t.procedure.query(() => {
-    return {
-      message: 'Hello from tRPC on Netlify Functions!',
-    };
+  greet: t.procedure.query(async ({ ctx }) => {
+    try {
+      const users = await ctx.prisma.user.findMany();
+      return {
+        message: 'Hello from tRPC with Prisma!',
+        users,
+      };
+    } catch (error) {
+      console.error('Prisma query error:', error);
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Failed to fetch users: ${message}`);
+    }
   }),
 });
 
-// Export the Netlify Function handler
-export const handler = async (event: HandlerEvent, context: HandlerContext) => {
-  // Convert event.headers to HeadersInit
-  const headers = new Headers();
-  for (const [key, value] of Object.entries(event.headers)) {
-    if (value !== undefined) {
-      headers.append(key, value);
-    }
-  }
-
-  // Adapt tRPC fetch handler for Netlify
-  const response = await fetchRequestHandler({
-    endpoint: '/api/trpc',
-    req: new Request(
-      `https://${event.headers.host ?? 'localhost'}${event.path}`,
-      {
-        method: event.httpMethod,
-        headers,
-        body: event.body ? event.body : undefined,
+export const handler = async (handlerEvent: HandlerEvent, context: HandlerContext) => {
+  try {
+    const headers = new Headers();
+    for (const [key, value] of Object.entries(handlerEvent.headers)) {
+      if (typeof value === 'string') {
+        headers.append(key, value);
       }
-    ),
-    router: appRouter,
-    createContext: () => ({ event, context }),
-  });
+    }
 
-  // Convert fetch response to Netlify response
-  return {
-    statusCode: response.status,
-    headers: Object.fromEntries(response.headers.entries()),
-    body: await response.text(),
-  };
+    const response = await fetchRequestHandler({
+      endpoint: '/api/trpc',
+      req: new Request(
+        `https://${handlerEvent.headers.host ?? 'localhost'}${handlerEvent.path}`,
+        {
+          method: handlerEvent.httpMethod,
+          headers,
+          body: handlerEvent.body ?? undefined,
+        }
+      ),
+      router: appRouter,
+      createContext: () => ({ event: handlerEvent, context, prisma }),
+    });
+
+    return {
+      statusCode: response.status,
+      headers: {
+        ...Object.fromEntries(response.headers.entries()),
+        'Access-Control-Allow-Origin': '*',
+      },
+      body: await response.text(),
+    };
+  } catch (error) {
+    console.error('Function error:', error);
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return {
+      statusCode: 500,
+      headers: { 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({ error: 'Internal Server Error', details: message }),
+    };
+  }
 };
 
-// Export the router type for the client
 export type AppRouter = typeof appRouter;

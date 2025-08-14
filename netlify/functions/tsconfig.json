@@ -7,8 +7,10 @@
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "composite": true
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true
   },
-  "include": ["**/*"],
-  "exclude": ["dist", "node_modules"]
+  "include": ["trpc.ts"],
+  "exclude": ["dist/**/*"]
 }

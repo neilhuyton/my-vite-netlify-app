@@ -2,7 +2,8 @@
 [build]
   command = "npm run build"
   publish = "dist"
-  functions = "netlify/functions"
+  functions = "netlify/functions/dist"
+  environment = { NODE_ENV = "production" } # For build process only
 
 [dev]
   command = "npm run dev"
@@ -10,8 +11,14 @@
   port = 8888
   publish = "dist"
   autoLaunch = false
+  env = { DOTENV_PATH = "prisma/.env" } # For Prisma CLI in dev
 
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
   status = 200
+
+[functions]
+  included_files = ["netlify/functions/dist/*.js"]
+  node_bundler = "esbuild"
+  external_node_modules = ["@prisma/client", ".prisma"]

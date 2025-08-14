@@ -4,18 +4,18 @@
     "module": "ESNext",
     "moduleResolution": "node",
     "outDir": "./dist",
-    "rootDir": "./",
     "strict": true,
-    "jsx": "react-jsx",
     "esModuleInterop": true,
     "skipLibCheck": true,
+    "composite": true,
+    "jsx": "react-jsx",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
-    },
-    "composite": true
+      "@/*": ["src/*"],
+      "netlify/functions/trpc": ["netlify/functions/trpc.ts"]
+    }
   },
-  "include": ["src/**/*", "netlify/functions/**/*"],
-  "exclude": ["node_modules", "dist"],
-  "references": [{ "path": "./netlify/functions" }]
+  "include": ["src/**/*"],
+  "exclude": ["dist", "node_modules", "netlify/functions/dist/**/*"],
+  "references": [{ "path": "./netlify/functions/tsconfig.json" }]
 }

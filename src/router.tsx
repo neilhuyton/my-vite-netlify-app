@@ -19,10 +19,10 @@ const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
   component: () => (
-    <>
+    <AuthenticatedRoute>
       <WeightList />
       <WeightChart />
-    </>
+    </AuthenticatedRoute>
   ),
 });
 

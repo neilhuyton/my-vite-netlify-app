@@ -2,7 +2,7 @@
   command = "npm run build"
   publish = "dist"
   functions = "netlify/functions/dist"
-  environment = { NODE_ENV = "production" } # For build process only
+  environment = { NODE_ENV = "production" }
 
 [dev]
   command = "npm run dev"
@@ -10,11 +10,32 @@
   port = 8888
   publish = "dist"
   autoLaunch = false
-  env = { DOTENV_PATH = "prisma/.env" } # For Prisma CLI in dev
+  env = { DOTENV_PATH = "prisma/.env" }
 
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
+  status = 200
+
+# Explicitly serve PWA assets before the catch-all redirect
+[[redirects]]
+  from = "/manifest.webmanifest"
+  to = "/manifest.webmanifest"
+  status = 200
+
+[[redirects]]
+  from = "/sw.js"
+  to = "/sw.js"
+  status = 200
+
+[[redirects]]
+  from = "/*.png"
+  to = "/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/*.ico"
+  to = "/:splat"
   status = 200
 
 [[redirects]]
@@ -26,3 +47,29 @@
   included_files = ["netlify/functions/dist/*.js"]
   node_bundler = "esbuild"
   external_node_modules = ["@prisma/client", ".prisma"]
+
+[[headers]]
+  for = "/manifest.webmanifest"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+    Content-Type = "application/manifest+json"
+
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.png"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.ico"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

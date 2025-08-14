@@ -22,6 +22,7 @@ export default function AppHeader({
       <Toolbar>
         <IconButton
           color="inherit"
+          aria-label="open drawer"
           edge="start"
           onClick={onDrawerToggle}
           sx={{ mr: 2, display: { sm: "none" } }}

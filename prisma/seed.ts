@@ -4,27 +4,18 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 async function main() {
-  const users = [
-    { name: "Alice", email: "alice@example.com" },
-    { name: "Bob", email: "bob@example.com" },
-  ];
-
-  for (const user of users) {
-    const existingUser = await prisma.user.findUnique({
-      where: { email: user.email },
-    });
-
-    if (!existingUser) {
-      await prisma.user.create({
-        data: user,
-      });
-      console.log(`Created user: ${user.email}`);
-    } else {
-      console.log(`User already exists: ${user.email}`);
-    }
-  }
+  await prisma.weightMeasurement.deleteMany(); // Clear existing data
+  await prisma.weightMeasurement.createMany({
+    data: [{ weightKg: 70.5 }, { weightKg: 71.2 }, { weightKg: 70.8 }],
+  });
+  console.log("Database seeded with weight measurements");
 }
 
 main()
-  .catch((e) => console.error(e))
-  .finally(async () => await prisma.$disconnect());
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

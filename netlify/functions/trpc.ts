@@ -3,6 +3,7 @@ import { initTRPC } from "@trpc/server";
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 import { HandlerEvent, HandlerContext } from "@netlify/functions";
 import { PrismaClient } from "@prisma/client";
+import { z } from "zod";
 
 const prisma = new PrismaClient({
   log: ["query", "info", "warn", "error"],
@@ -17,25 +18,51 @@ type TRPCContext = {
 const t = initTRPC.context<TRPCContext>().create();
 
 export const appRouter = t.router({
-  greet: t.procedure.query(async ({ ctx }) => {
+  getWeights: t.procedure.query(async ({ ctx }) => {
     try {
-      const users = await ctx.prisma.user.findMany();
+      const measurements = await ctx.prisma.weightMeasurement.findMany({
+        orderBy: { createdAt: "desc" },
+      });
       return {
-        message: "Hello from tRPC with Prisma!",
-        users,
+        message: "Weight measurements retrieved successfully!",
+        measurements,
       };
     } catch (error) {
       console.error("Prisma query error:", error);
-      const message = error instanceof Error ? error.message : "Unknown error";
-      throw new Error(`Failed to fetch users: ${message}`);
+      throw new Error("Failed to fetch weight measurements");
     }
   }),
+  addWeight: t.procedure
+    .input(
+      z.object({
+        weightKg: z.number(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      console.log("Received addWeight input:", input); // Debug
+      try {
+        const measurement = await ctx.prisma.weightMeasurement.create({
+          data: {
+            weightKg: input.weightKg,
+          },
+        });
+        return {
+          message: "Weight measurement added successfully!",
+          measurement,
+        };
+      } catch (error) {
+        console.error("Prisma create error:", error);
+        throw new Error("Failed to add weight measurement");
+      }
+    }),
 });
 
 export const handler = async (
   handlerEvent: HandlerEvent,
   context: HandlerContext
 ) => {
+  console.log("Raw handler event:", handlerEvent); // Debug
+  console.log("Request body:", handlerEvent.body); // Debug
   try {
     const headers = new Headers();
     for (const [key, value] of Object.entries(handlerEvent.headers)) {
@@ -44,7 +71,6 @@ export const handler = async (
       }
     }
 
-    // Only include body for methods that support it (e.g., POST, PUT)
     const requestOptions: RequestInit = {
       method: handlerEvent.httpMethod,
       headers,

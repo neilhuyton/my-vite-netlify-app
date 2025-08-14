@@ -1,10 +1,10 @@
 // src/App.tsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Outlet, useLocation } from "@tanstack/react-router";
 import { Box, CssBaseline, Container } from "@mui/material";
 import { trpc } from "./trpc";
-import { GetWeightsResponse } from "./types";
+import { GetWeightsResponse, AddWeightResponse } from "./types";
 import AppHeader from "./components/AppHeader";
 import Sidebar from "./components/Sidebar";
 import WeightForm from "./components/WeightForm";
@@ -16,18 +16,28 @@ export function App() {
   const [weight, setWeight] = useState("");
   const [error, setError] = useState("");
   const queryClient = useQueryClient();
+  const location = useLocation();
   const { data, isLoading, isError, error: queryError } = trpc.getWeights.useQuery(undefined, {
     select: (data) => data as GetWeightsResponse,
   });
   const mutation = trpc.addWeight.useMutation({
-    onSuccess: () => {
+    onSuccess: (data: AddWeightResponse) => {
       setWeight("");
       setError("");
       queryClient.invalidateQueries({ queryKey: ["getWeights"] });
     },
     onError: (err) => setError(`Failed to add weight: ${err.message}`),
   });
-  const location = useLocation();
+
+  // Debug logging
+  useEffect(() => {
+    if (data) {
+      console.log(`App: Weights fetched for ${location.pathname}:`, data);
+    }
+    if (isError && queryError) {
+      console.log(`App: Weights fetch error for ${location.pathname}:`, queryError);
+    }
+  }, [data, isError, queryError, location.pathname]);
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);

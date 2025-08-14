@@ -3,10 +3,13 @@ export interface WeightMeasurement {
   id: number;
   weightKg: number;
   createdAt: string;
-  updatedAt?: string; // Optional, as it's not used in the UI
+  updatedAt: string; // Required, as per the error
 }
 
-export interface GetWeightsResponse {
-  message: string;
+export type GetWeightsResponse = {
   measurements: WeightMeasurement[];
+};
+
+export interface AddWeightResponse {
+  message: string;
 }

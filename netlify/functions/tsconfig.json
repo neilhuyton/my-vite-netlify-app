@@ -10,7 +10,8 @@
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "composite": true
+    "composite": true,
+    "jsx": "react-jsx"
   },
   "include": ["trpc.ts"],
   "exclude": ["dist/**/*"]

@@ -1,58 +1,102 @@
 // src/components/WeightList.tsx
-import { List, ListItem, ListItemText, Typography, Box } from "@mui/material";
-import { useEffect } from "react";
+import { useState } from "react";
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  IconButton,
+  Paper,
+  TablePagination,
+  useTheme,
+} from "@mui/material";
+import DeleteIcon from "@mui/icons-material/Delete";
 import { trpc } from "../trpc";
 import { GetWeightsResponse } from "../types";
+import { format } from "date-fns";
 
 export default function WeightList() {
-  const { data, isLoading, isError, error } = trpc.getWeights.useQuery(
-    undefined,
-    {
-      select: (data) => data as GetWeightsResponse,
-    }
-  );
+  const theme = useTheme();
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
 
-  useEffect(() => {
-    if (data) {
-      console.log(
-        `WeightList: Weights fetched for ${window.location.pathname}:`,
-        data
-      );
-    }
-    if (isError && error) {
-      console.log(
-        `WeightList: Weights fetch error for ${window.location.pathname}:`,
-        error
-      );
-    }
-  }, [data, isError, error]);
+  const { data, isLoading, isError, error, refetch } = trpc.getWeights.useQuery(undefined, {
+    select: (data) => data as unknown as GetWeightsResponse, // Safer type assertion
+  });
 
-  if (isLoading)
-    return <Box sx={{ p: 2, textAlign: "center" }}>Loading weights...</Box>;
-  if (isError)
-    return (
-      <Box sx={{ p: 2, textAlign: "center" }}>Error: {error?.message}</Box>
-    );
+  const deleteWeight = trpc.deleteWeight.useMutation({ onSuccess: () => refetch() });
+
+  const paginatedMeasurements = data?.measurements.slice(page * rowsPerPage, (page + 1) * rowsPerPage) ?? [];
+
+  if (isLoading) return <Box sx={{ p: 2, textAlign: "center" }}>Loading...</Box>;
+  if (isError) return <Box sx={{ p: 2, textAlign: "center" }}>Error: {error?.message}</Box>;
 
   return (
-    <Box sx={{ mt: 2, width: "100%" }}>
-      <Typography variant="h6">Weight Entries</Typography>
-      {data?.measurements.length === 0 ? (
-        <Typography sx={{ mt: 1 }}>No measurements</Typography>
-      ) : (
-        <List sx={{ width: "100%" }}>
-          {data?.measurements.map((entry) => (
-            <ListItem key={entry.id} sx={{ py: 1, width: "100%" }}>
-              <ListItemText
-                primary={`${entry.weightKg} kg`}
-                secondary={new Date(entry.createdAt).toLocaleDateString()}
-                primaryTypographyProps={{ fontSize: "1rem" }}
-                secondaryTypographyProps={{ fontSize: "0.875rem" }}
-              />
-            </ListItem>
-          ))}
-        </List>
-      )}
+    <Box sx={{ p: 2, mt: 2 }}>
+      <Card sx={{ borderRadius: 2, boxShadow: theme.shadows[3] }}>
+        <CardContent>
+          <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>Weight Measurements</Typography>
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 600 }}>Date</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 600 }}>
+                    Weight (kg)
+                  </TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 600 }}>
+                    Actions
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {paginatedMeasurements.length ? (
+                  paginatedMeasurements.map((entry) => (
+                    <TableRow key={entry.id} sx={{ "&:hover": { bgcolor: theme.palette.action.hover } }}>
+                      <TableCell>{format(new Date(entry.createdAt), "MMM dd, yyyy")}</TableCell>
+                      <TableCell align="right">{entry.weightKg.toFixed(1)}</TableCell>
+                      <TableCell align="right">
+                        <IconButton
+                          color="error"
+                          onClick={() => deleteWeight.mutate({ id: entry.id })}
+                          size="small"
+                        >
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={3} align="center">
+                      No measurements
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+          <TablePagination
+            component="div"
+            count={data?.measurements.length ?? 0}
+            page={page}
+            onPageChange={(_, newPage) => setPage(newPage)}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={(e) => {
+              setRowsPerPage(parseInt(e.target.value, 10));
+              setPage(0);
+            }}
+            rowsPerPageOptions={[5, 10, 25]}
+            sx={{ ".MuiTablePagination-toolbar": { flexWrap: "wrap", justifyContent: "center", p: 1 } }}
+          />
+        </CardContent>
+      </Card>
     </Box>
   );
 }

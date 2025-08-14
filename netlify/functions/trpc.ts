@@ -1,4 +1,3 @@
-// netlify/functions/trpc.ts
 import { initTRPC } from "@trpc/server";
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 import { HandlerEvent, HandlerContext } from "@netlify/functions";
@@ -6,25 +5,21 @@ import { PrismaClient } from "@prisma/client";
 import { z } from "zod";
 
 const prisma = new PrismaClient({ log: ["query", "info", "warn", "error"] });
-
-type TRPCContext = { event: HandlerEvent; context: HandlerContext; prisma: PrismaClient };
-
-const t = initTRPC.context<TRPCContext>().create();
+const t = initTRPC.context<{ event: HandlerEvent; context: HandlerContext; prisma: PrismaClient }>().create();
 
 export const appRouter = t.router({
   getWeights: t.procedure.query(async ({ ctx }) => ({
-    measurements: await ctx.prisma.weightMeasurement.findMany({
-      orderBy: { createdAt: "desc" },
-    }),
+    measurements: await ctx.prisma.weightMeasurement.findMany({ orderBy: { createdAt: "desc" } }),
   })),
   addWeight: t.procedure
     .input(z.object({ weightKg: z.number() }))
     .mutation(async ({ ctx, input }) => ({
-      message: "Weight measurement added successfully!",
-      measurement: await ctx.prisma.weightMeasurement.create({
-        data: { weightKg: input.weightKg },
-      }),
+      message: "Weight added",
+      measurement: await ctx.prisma.weightMeasurement.create({ data: { weightKg: input.weightKg } }),
     })),
+  deleteWeight: t.procedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ ctx, input }) => ctx.prisma.weightMeasurement.delete({ where: { id: input.id } })),
 });
 
 export const handler = async (event: HandlerEvent, context: HandlerContext) => {
@@ -47,13 +42,11 @@ export const handler = async (event: HandlerEvent, context: HandlerContext) => {
       body: await response.text(),
     };
   } catch (error) {
+    console.error("tRPC handler error:", error);
     return {
       statusCode: 500,
       headers: { "Access-Control-Allow-Origin": "*" },
-      body: JSON.stringify({
-        error: "Internal Server Error",
-        details: error instanceof Error ? error.message : "Unknown error",
-      }),
+      body: JSON.stringify({ error: "Internal Server Error" }),
     };
   }
 };

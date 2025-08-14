@@ -3,7 +3,7 @@ export interface WeightMeasurement {
   id: number;
   weightKg: number;
   createdAt: string;
-  updatedAt: string; // Required, as per the error
+  updatedAt: string;
 }
 
 export type GetWeightsResponse = {

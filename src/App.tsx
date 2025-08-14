@@ -1,91 +1,58 @@
 // src/App.tsx
-import { useState, useEffect } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { Box, Toolbar } from "@mui/material";
 import { Outlet, useLocation } from "@tanstack/react-router";
-import { Box, CssBaseline } from "@mui/material";
-import { trpc } from "./trpc";
-import { GetWeightsResponse, AddWeightResponse } from "./types";
-import AppHeader from "./components/AppHeader";
 import Sidebar from "./components/Sidebar";
+import AppHeader from "./components/AppHeader";
 import WeightForm from "./components/WeightForm";
+import { trpc } from "./trpc";
 
-const drawerWidth = 200;
-
-export function App() {
+export const App = () => {
+  const drawerWidth = 200;
   const [mobileOpen, setMobileOpen] = useState(false);
   const [weight, setWeight] = useState("");
   const [error, setError] = useState("");
-  const queryClient = useQueryClient();
-  const location = useLocation();
-  const { data, isLoading, isError, error: queryError } = trpc.getWeights.useQuery(undefined, {
-    select: (data) => data as GetWeightsResponse,
-  });
-  const mutation = trpc.addWeight.useMutation({
-    onSuccess: (data: AddWeightResponse) => {
+  const { pathname } = useLocation();
+
+  const addWeight = trpc.addWeight.useMutation({
+    onSuccess: () => {
       setWeight("");
       setError("");
-      queryClient.invalidateQueries({ queryKey: ["getWeights"] });
     },
-    onError: (err) => setError(`Failed to add weight: ${err.message}`),
+    onError: (error) => setError(error.message),
   });
 
-  useEffect(() => {
-    if (data) {
-      console.log(`App: Weights fetched for ${location.pathname}:`, data);
+  const handleSubmit = (value: string) => {
+    const weightValue = parseFloat(value);
+    if (isNaN(weightValue) || weightValue <= 0) {
+      setError("Invalid weight");
+      return;
     }
-    if (isError && queryError) {
-      console.log(`App: Weights fetch error for ${location.pathname}:`, queryError);
-    }
-  }, [data, isError, queryError, location.pathname]);
-
-  const handleDrawerToggle = () => {
-    setMobileOpen(!mobileOpen);
+    addWeight.mutate({ weightKg: weightValue });
   };
-
-  const handleSubmit = (weight: string) => {
-    const weightNum = parseFloat(weight);
-    if (weightNum >= 0.1) {
-      mutation.mutate({ weightKg: weightNum });
-    } else {
-      setError("Weight must be at least 0.1 kg");
-    }
-  };
-
-  if (isLoading) return <Box sx={{ p: 2, textAlign: "center" }}>Loading...</Box>;
-  if (isError) return <Box sx={{ p: 2, textAlign: "center" }}>Error: {queryError.message}</Box>;
 
   return (
-    <Box sx={{ display: "flex", minHeight: "100vh", width: "100%" }}>
-      <CssBaseline />
-      <AppHeader onDrawerToggle={handleDrawerToggle} drawerWidth={drawerWidth} />
+    <Box sx={{ display: "flex" }}>
+      <AppHeader onDrawerToggle={() => setMobileOpen(!mobileOpen)} drawerWidth={drawerWidth} />
       <Sidebar
         mobileOpen={mobileOpen}
-        onDrawerToggle={handleDrawerToggle}
-        locationPathname={location.pathname}
+        onDrawerToggle={() => setMobileOpen(!mobileOpen)}
+        locationPathname={pathname}
         drawerWidth={drawerWidth}
       />
-      <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          p: { xs: 2, sm: 3 },
-          width: { xs: "100%", sm: `calc(100% - ${drawerWidth}px)` },
-          mt: { xs: 7, sm: 8 },
-        }}
-      >
+      <Box component="main" sx={{ flexGrow: 1, p: 3, width: { xs: "100%", sm: `calc(100% - ${drawerWidth}px)` } }}>
+        <Toolbar />
         <WeightForm
           weight={weight}
           setWeight={setWeight}
-          error={error || (mutation.isError ? mutation.error!.message : "")}
-          isPending={mutation.isPending}
-          isSuccess={mutation.isSuccess}
-          successMessage={mutation.data?.message}
+          error={error}
+          isPending={addWeight.isPending}
+          isSuccess={addWeight.isSuccess}
+          successMessage={addWeight.data?.message}
           onSubmit={handleSubmit}
         />
         <Outlet />
       </Box>
     </Box>
   );
-}
-
-export default App;
+};

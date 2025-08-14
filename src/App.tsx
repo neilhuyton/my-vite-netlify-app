@@ -27,61 +27,15 @@ function App() {
   const queryClient = useQueryClient();
   const { data, isLoading, isError, error } = trpc.getWeights.useQuery();
   const mutation = trpc.addWeight.useMutation({
-    onMutate: async ({ weightKg }) => {
-      // Cancel any outgoing refetches to avoid overwriting optimistic update
-      await queryClient.cancelQueries({ queryKey: ["getWeights"] });
-
-      // Get the previous data
-      const previousData = queryClient.getQueryData<GetWeightsResponse>([
-        "getWeights",
-      ]);
-
-      // Optimistically update the cache
-      queryClient.setQueryData<GetWeightsResponse>(["getWeights"], (old) => {
-        if (!old) return { message: "Weights fetched", measurements: [] };
-        const optimisticMeasurement: WeightMeasurement = {
-          id: Math.random(), // Temporary ID (will be replaced by server ID)
-          weightKg,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-        return {
-          ...old,
-          measurements: [optimisticMeasurement, ...old.measurements],
-        };
-      });
-
-      // Return context for rollback in case of error
-      return { previousData };
-    },
-    onSuccess: (data) => {
+    onSuccess: () => {
       setWeight("");
       setErrorMessage("");
-      // Update cache with actual server response
-      queryClient.setQueryData<GetWeightsResponse>(["getWeights"], (old) => {
-        if (!old)
-          return { message: data.message, measurements: [data.measurement] };
-        return {
-          ...old,
-          message: data.message,
-          measurements: [
-            data.measurement, // Add the actual measurement from server
-            ...old.measurements.filter((m) => m.id !== Math.random()), // Remove optimistic entry
-          ],
-        };
-      });
-      // Optionally, invalidate to refetch for consistency
+      // Invalidate the getWeights query to trigger a refetch
       queryClient.invalidateQueries({ queryKey: ["getWeights"] });
     },
-    onError: (err, _variables, context) => {
+    onError: (err) => {
       console.error("Mutation error:", err);
       setErrorMessage(`Failed to add weight: ${err.message}`);
-      // Rollback to previous data on error
-      queryClient.setQueryData(["getWeights"], context?.previousData);
-    },
-    onSettled: () => {
-      // Ensure cache is consistent after mutation
-      queryClient.invalidateQueries({ queryKey: ["getWeights"] });
     },
   });
 

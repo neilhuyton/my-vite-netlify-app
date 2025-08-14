@@ -1,15 +1,16 @@
+// netlify/functions/tsconfig.json
 {
   "compilerOptions": {
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "node",
     "outDir": "./dist",
+    "declaration": true,
+    "declarationDir": "./dist",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "composite": true,
-    "declaration": true,
-    "declarationMap": true
+    "composite": true
   },
   "include": ["trpc.ts"],
   "exclude": ["dist/**/*"]

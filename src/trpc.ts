@@ -1,15 +1,20 @@
 // src/trpc.ts
 import { createTRPCReact } from '@trpc/react-query';
-import { httpBatchLink } from '@trpc/client';
+import type { AppRouter } from 'netlify/functions/trpc';
 import { QueryClient } from '@tanstack/react-query';
-import type { AppRouter } from '../netlify/functions/trpc';
+import { httpBatchLink } from '@trpc/client';
 
+// Create the tRPC client
 export const trpc = createTRPCReact<AppRouter>();
+
+// Create a QueryClient for React Query
+export const queryClient = new QueryClient();
+
+// Create the tRPC client instance
 export const trpcClient = trpc.createClient({
   links: [
     httpBatchLink({
-      url: '/api/trpc',
+      url: '/api/trpc', // Matches the redirect in netlify.toml
     }),
   ],
 });
-export const queryClient = new QueryClient();

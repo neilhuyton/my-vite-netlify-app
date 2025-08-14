@@ -2,14 +2,14 @@
 import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Outlet, useLocation } from "@tanstack/react-router";
-import { Box, CssBaseline, Container } from "@mui/material";
+import { Box, CssBaseline } from "@mui/material";
 import { trpc } from "./trpc";
 import { GetWeightsResponse, AddWeightResponse } from "./types";
 import AppHeader from "./components/AppHeader";
 import Sidebar from "./components/Sidebar";
 import WeightForm from "./components/WeightForm";
 
-const drawerWidth = 240;
+const drawerWidth = 200;
 
 export function App() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -29,7 +29,6 @@ export function App() {
     onError: (err) => setError(`Failed to add weight: ${err.message}`),
   });
 
-  // Debug logging
   useEffect(() => {
     if (data) {
       console.log(`App: Weights fetched for ${location.pathname}:`, data);
@@ -52,11 +51,11 @@ export function App() {
     }
   };
 
-  if (isLoading) return <Box>Loading...</Box>;
-  if (isError) return <Box>Error: {queryError.message}</Box>;
+  if (isLoading) return <Box sx={{ p: 2, textAlign: "center" }}>Loading...</Box>;
+  if (isError) return <Box sx={{ p: 2, textAlign: "center" }}>Error: {queryError.message}</Box>;
 
   return (
-    <Box sx={{ display: "flex" }}>
+    <Box sx={{ display: "flex", minHeight: "100vh", width: "100%" }}>
       <CssBaseline />
       <AppHeader onDrawerToggle={handleDrawerToggle} drawerWidth={drawerWidth} />
       <Sidebar
@@ -69,23 +68,21 @@ export function App() {
         component="main"
         sx={{
           flexGrow: 1,
-          p: 3,
-          width: { sm: `calc(100% - ${drawerWidth}px)` },
-          mt: { xs: 8, sm: 8 },
+          p: { xs: 2, sm: 3 },
+          width: { xs: "100%", sm: `calc(100% - ${drawerWidth}px)` },
+          mt: { xs: 7, sm: 8 },
         }}
       >
-        <Container maxWidth="md">
-          <WeightForm
-            weight={weight}
-            setWeight={setWeight}
-            error={error || (mutation.isError ? mutation.error!.message : "")}
-            isPending={mutation.isPending}
-            isSuccess={mutation.isSuccess}
-            successMessage={mutation.data?.message}
-            onSubmit={handleSubmit}
-          />
-          <Outlet />
-        </Container>
+        <WeightForm
+          weight={weight}
+          setWeight={setWeight}
+          error={error || (mutation.isError ? mutation.error!.message : "")}
+          isPending={mutation.isPending}
+          isSuccess={mutation.isSuccess}
+          successMessage={mutation.data?.message}
+          onSubmit={handleSubmit}
+        />
+        <Outlet />
       </Box>
     </Box>
   );

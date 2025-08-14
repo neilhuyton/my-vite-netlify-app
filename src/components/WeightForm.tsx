@@ -12,27 +12,15 @@ interface WeightFormProps {
   onSubmit: (weight: string) => void;
 }
 
-export default function WeightForm({
-  weight,
-  setWeight,
-  error,
-  isPending,
-  isSuccess,
-  successMessage,
-  onSubmit,
-}: WeightFormProps) {
+export default function WeightForm({ weight, setWeight, error, isPending, isSuccess, successMessage, onSubmit }: WeightFormProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit(weight);
   };
 
   return (
-    <>
-      <Box
-        component="form"
-        onSubmit={handleSubmit}
-        sx={{ display: "flex", gap: 2, mb: 4 }}
-      >
+    <Box sx={{ mb: 3 }}>
+      <Box component="form" onSubmit={handleSubmit} sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
         <TextField
           type="number"
           inputProps={{ step: "0.1", min: "0.1" }}
@@ -42,26 +30,29 @@ export default function WeightForm({
           variant="outlined"
           required
           fullWidth
+          sx={{ mb: 1 }}
         />
         <Button
           type="submit"
           variant="contained"
           startIcon={<AddIcon />}
           disabled={isPending}
+          fullWidth
+          sx={{ py: 1.5, fontSize: "1rem" }}
         >
           {isPending ? "Saving..." : "Add"}
         </Button>
       </Box>
       {error && (
-        <Typography color="error" sx={{ mb: 2 }}>
+        <Typography color="error" sx={{ mt: 1, fontSize: "0.875rem" }}>
           {error}
         </Typography>
       )}
       {isSuccess && successMessage && (
-        <Typography color="success.main" sx={{ mb: 2 }}>
+        <Typography color="success.main" sx={{ mt: 1, fontSize: "0.875rem" }}>
           {successMessage}
         </Typography>
       )}
-    </>
+    </Box>
   );
 }

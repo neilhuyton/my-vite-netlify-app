@@ -1,14 +1,5 @@
 // src/components/Sidebar.tsx
-import {
-  Box,
-  Drawer,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
-  Typography,
-} from "@mui/material";
+import { Box, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Typography } from "@mui/material";
 import { Link } from "@tanstack/react-router";
 import ListIcon from "@mui/icons-material/List";
 import ShowChartIcon from "@mui/icons-material/ShowChart";
@@ -20,12 +11,7 @@ interface SidebarProps {
   drawerWidth: number;
 }
 
-export default function Sidebar({
-  mobileOpen,
-  onDrawerToggle,
-  locationPathname,
-  drawerWidth,
-}: SidebarProps) {
+export default function Sidebar({ mobileOpen, onDrawerToggle, locationPathname, drawerWidth }: SidebarProps) {
   const drawer = (
     <Box sx={{ textAlign: "center", pt: 2 }}>
       <Typography variant="h6" sx={{ my: 2 }}>
@@ -42,6 +28,7 @@ export default function Sidebar({
               to={item.to}
               onClick={() => mobileOpen && onDrawerToggle()}
               selected={locationPathname === item.to}
+              sx={{ py: 1.5 }}
             >
               <ListItemIcon sx={{ color: "#fff" }}>{item.icon}</ListItemIcon>
               <ListItemText primary={item.text} />
@@ -53,12 +40,7 @@ export default function Sidebar({
   );
 
   return (
-    <Box
-      component="nav"
-      sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
-      aria-label="navigation"
-    >
-      {/* Mobile Drawer */}
+    <Box component="nav" sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }} aria-label="navigation">
       <Drawer
         variant="temporary"
         open={mobileOpen}
@@ -66,12 +48,11 @@ export default function Sidebar({
         ModalProps={{ keepMounted: true }}
         sx={{
           display: { xs: "block", sm: "none" },
-          "& .MuiDrawer-paper": { boxSizing: "border-box", width: drawerWidth },
+          "& .MuiDrawer-paper": { boxSizing: "border-box", width: "85%" },
         }}
       >
         {drawer}
       </Drawer>
-      {/* Desktop Drawer */}
       <Drawer
         variant="permanent"
         sx={{

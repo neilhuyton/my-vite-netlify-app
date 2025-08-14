@@ -8,8 +8,6 @@ const prisma = new PrismaClient({
   log: ["query", "info", "warn", "error"],
 });
 
-console.log("DATABASE_URL in function:", process.env.DATABASE_URL);
-
 type TRPCContext = {
   event: HandlerEvent;
   context: HandlerContext;

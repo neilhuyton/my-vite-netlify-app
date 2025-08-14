@@ -1,9 +1,9 @@
 // src/App.tsx
 import { useState } from "react";
 import { trpc } from "./trpc";
-import "./App.css";
 import { useQueryClient } from "@tanstack/react-query";
 import {
+  Chart as ChartJS,
   LineController,
   LineElement,
   PointElement,
@@ -14,8 +14,8 @@ import {
   Legend,
 } from "chart.js";
 import { Chart } from "react-chartjs-2";
-import { Chart as ChartJS } from "chart.js/auto";
-import "chartjs-adapter-date-fns"; // For date handling in Chart.js
+import "chartjs-adapter-date-fns";
+import "./App.css";
 
 // Register Chart.js components
 ChartJS.register(
@@ -33,63 +33,49 @@ interface WeightMeasurement {
   id: number;
   weightKg: number;
   createdAt: string;
-  updatedAt: string;
-}
-
-interface GetWeightsResponse {
-  message: string;
-  measurements: WeightMeasurement[];
-}
-
-interface AddWeightResponse {
-  message: string;
-  measurement: WeightMeasurement;
 }
 
 function App() {
   const [weight, setWeight] = useState("");
-  const [errorMessage, setErrorMessage] = useState("");
+  const [error, setError] = useState("");
   const queryClient = useQueryClient();
-  const { data, isLoading, isError, error } = trpc.getWeights.useQuery();
+  const {
+    data,
+    isLoading,
+    isError,
+    error: queryError,
+  } = trpc.getWeights.useQuery();
   const mutation = trpc.addWeight.useMutation({
     onSuccess: () => {
       setWeight("");
-      setErrorMessage("");
+      setError("");
       queryClient.invalidateQueries({ queryKey: ["getWeights"] });
     },
-    onError: (err) => {
-      console.error("Mutation error:", err);
-      setErrorMessage(`Failed to add weight: ${err.message}`);
-    },
+    onError: (err) => setError(`Failed to add weight: ${err.message}`),
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMessage("");
     const weightNum = parseFloat(weight);
-    if (!isNaN(weightNum) && weightNum >= 0.1) {
+    if (weightNum >= 0.1) {
       mutation.mutate({ weightKg: weightNum });
     } else {
-      setErrorMessage("Please enter a valid weight (at least 0.1 kg)");
+      setError("Weight must be at least 0.1 kg");
     }
   };
 
   if (isLoading) return <div>Loading...</div>;
-  if (isError) return <div>Error: {error.message}</div>;
+  if (isError) return <div>Error: {queryError.message}</div>;
 
-  const response = data as GetWeightsResponse;
-
-  // Sort measurements by createdAt date (earliest to latest)
-  const sortedMeasurements = [...response.measurements].sort(
+  const measurements = data!.measurements.sort(
     (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
   );
 
-  // Prepare data for Chart.js
   const chartData = {
     datasets: [
       {
         label: "Weight (kg)",
-        data: sortedMeasurements.map((m) => ({
+        data: measurements.map((m) => ({
           x: new Date(m.createdAt),
           y: m.weightKg,
         })),
@@ -101,45 +87,26 @@ function App() {
     ],
   };
 
-  // Chart options
   const chartOptions = {
     scales: {
       x: {
         type: "time" as const,
-        time: {
-          unit: "day" as const,
-          tooltipFormat: "MMM d, yyyy",
-        },
-        title: {
-          display: true,
-          text: "Date",
-        },
+        time: { unit: "day" as const, tooltipFormat: "MMM d, yyyy" },
+        title: { display: true, text: "Date" },
       },
-      y: {
-        title: {
-          display: true,
-          text: "Weight (kg)",
-        },
-        beginAtZero: false,
-      },
+      y: { title: { display: true, text: "Weight (kg)" }, beginAtZero: false },
     },
     plugins: {
-      legend: {
-        display: true,
-      },
+      legend: { display: true },
       tooltip: {
-        callbacks: {
-          label: (context: any) => `Weight: ${context.parsed.y} kg`,
-        },
+        callbacks: { label: (ctx: any) => `Weight: ${ctx.parsed.y} kg` },
       },
     },
   };
 
   return (
     <div className="App">
-      <h1>Vite + tRPC + Prisma + Netlify Functions</h1>
-      <p>{response.message}</p>
-
+      <h1>Weight Tracker</h1>
       <form onSubmit={handleSubmit}>
         <input
           type="number"
@@ -147,30 +114,28 @@ function App() {
           min="0.1"
           value={weight}
           onChange={(e) => setWeight(e.target.value)}
-          placeholder="Enter weight in kg"
+          placeholder="Weight (kg)"
           required
         />
         <button type="submit" disabled={mutation.isPending}>
-          {mutation.isPending ? "Saving..." : "Add Weight"}
+          {mutation.isPending ? "Saving..." : "Add"}
         </button>
-        {errorMessage && <p style={{ color: "red" }}>{errorMessage}</p>}
-        {mutation.isError && (
-          <p style={{ color: "red" }}>Error: {mutation.error.message}</p>
+        {(error || mutation.isError) && (
+          <p style={{ color: "red" }}>{error || mutation.error!.message}</p>
         )}
         {mutation.isSuccess && <p>{mutation.data.message}</p>}
       </form>
 
-      <h2>Weight Measurements:</h2>
+      <h2>Measurements</h2>
       <ul>
-        {sortedMeasurements.map((measurement) => (
-          <li key={measurement.id}>
-            {measurement.weightKg} kg -{" "}
-            {new Date(measurement.createdAt).toLocaleString()}
+        {measurements.map((m) => (
+          <li key={m.id}>
+            {m.weightKg} kg - {new Date(m.createdAt).toLocaleString()}
           </li>
         ))}
       </ul>
 
-      <h2>Weight Over Time:</h2>
+      <h2>Weight Trend</h2>
       <div style={{ maxWidth: "800px", margin: "0 auto" }}>
         <Chart type="line" data={chartData} options={chartOptions} />
       </div>

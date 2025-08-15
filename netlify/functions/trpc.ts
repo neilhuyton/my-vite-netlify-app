@@ -284,10 +284,12 @@ export const appRouter = t.router({
   }),
 
   setGoal: protectedProcedure
-    .input(z.object({
-      goalWeightKg: z.number().positive(),
-      startWeightKg: z.number().positive(), // Add startWeightKg
-    }))
+    .input(
+      z.object({
+        goalWeightKg: z.number().positive(),
+        startWeightKg: z.number().positive(), // Add startWeightKg
+      })
+    )
     .mutation(async ({ ctx, input }) => {
       const user = await ctx.prisma.user.update({
         where: { id: ctx.user!.id },
@@ -297,7 +299,10 @@ export const appRouter = t.router({
           goalSetAt: new Date(),
         },
       });
-      return { message: "Goal set successfully", goalWeightKg: user.goalWeightKg };
+      return {
+        message: "Goal set successfully",
+        goalWeightKg: user.goalWeightKg,
+      };
     }),
 
   getGoal: protectedProcedure.query(async ({ ctx }) => {
@@ -324,6 +329,68 @@ export const appRouter = t.router({
       data: { goalWeightKg: null, goalSetAt: null, startWeightKg: null },
     });
     return { message: "Goal cleared successfully" };
+  }),
+
+  getWeightTrends: protectedProcedure.query(async ({ ctx }) => {
+    const measurements = await ctx.prisma.weightMeasurement.findMany({
+      where: { userId: ctx.user!.id },
+      orderBy: { createdAt: "asc" },
+      select: { weightKg: true, createdAt: true },
+    });
+
+    if (!measurements.length) {
+      return { weeklyAverages: [], rateOfChange: null, trendPoints: [] };
+    }
+
+    // Group by week (ISO week number)
+    const weeklyAverages = [];
+    const groupedByWeek: { [key: string]: { weights: number[]; date: Date } } =
+      {};
+    for (const m of measurements) {
+      const date = new Date(m.createdAt);
+      const yearWeek = `${date.getFullYear()}-W${
+        Math.floor((date.getDate() + ((date.getDay() + 6) % 7)) / 7) + 1
+      }`;
+      if (!groupedByWeek[yearWeek]) {
+        groupedByWeek[yearWeek] = { weights: [], date };
+      }
+      groupedByWeek[yearWeek].weights.push(m.weightKg);
+    }
+
+    for (const [yearWeek, group] of Object.entries(groupedByWeek)) {
+      const avg =
+        group.weights.reduce((sum, w) => sum + w, 0) / group.weights.length;
+      weeklyAverages.push({
+        week: yearWeek,
+        averageWeightKg: avg,
+        date: group.date,
+      });
+    }
+
+    // Calculate rate of change (kg/week)
+    const first = measurements[0];
+    const last = measurements[measurements.length - 1];
+    const daysDiff =
+      (new Date(last.createdAt).getTime() -
+        new Date(first.createdAt).getTime()) /
+      (1000 * 60 * 60 * 24);
+    const rateOfChange =
+      daysDiff > 0 ? (last.weightKg - first.weightKg) / (daysDiff / 7) : null;
+
+    // Simple moving average for trend line (3-point average)
+    const trendPoints = measurements.map((m, i, arr) => {
+      const slice = arr.slice(Math.max(0, i - 1), i + 2);
+      const avg = slice.reduce((sum, x) => sum + x.weightKg, 0) / slice.length;
+      return { x: new Date(m.createdAt), y: avg }; // Ensure x is Date
+    });
+
+    return {
+      weeklyAverages: weeklyAverages.sort(
+        (a, b) => a.date.getTime() - b.date.getTime()
+      ),
+      rateOfChange,
+      trendPoints,
+    };
   }),
 });
 

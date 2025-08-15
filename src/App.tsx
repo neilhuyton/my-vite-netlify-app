@@ -17,6 +17,7 @@ import Sidebar from "./components/Sidebar";
 import AppHeader from "./components/AppHeader";
 import WeightForm from "./components/WeightForm";
 import GoalForm from "./components/GoalForm";
+import TrendSummary from "./components/TrendSummary"; // Import TrendSummary
 import { useAuth } from "./context/AuthContext";
 import { trpc, queryClient } from "./trpc";
 
@@ -26,7 +27,7 @@ export const App = () => {
   const [weight, setWeight] = useState("");
   const [note, setNote] = useState("");
   const [goalWeight, setGoalWeight] = useState("");
-  const [startWeight, setStartWeight] = useState(""); // Add startWeight
+  const [startWeight, setStartWeight] = useState("");
   const [error, setError] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
@@ -34,10 +35,12 @@ export const App = () => {
   const { pathname } = useLocation();
   const navigate = useNavigate();
 
-  // Fetch goal and weights
-  const { data: goalData, refetch: refetchGoal } = trpc.getGoal.useQuery(undefined, {
-    enabled: !!user,
-  });
+  const { data: goalData, refetch: refetchGoal } = trpc.getGoal.useQuery(
+    undefined,
+    {
+      enabled: !!user,
+    }
+  );
 
   const addWeight = trpc.addWeight.useMutation({
     onSuccess: (response) => {
@@ -45,11 +48,13 @@ export const App = () => {
       setWeight("");
       setNote("");
       setError("");
-      console.log("Invalidating getWeights query");
+      console.log("Invalidating getWeights and getWeightTrends queries");
       queryClient.removeQueries({ queryKey: ["getWeights"] });
       queryClient.invalidateQueries({ queryKey: ["getWeights"] });
+      queryClient.removeQueries({ queryKey: ["getWeightTrends"] });
+      queryClient.invalidateQueries({ queryKey: ["getWeightTrends"] });
       refetchGoal();
-      setRefreshKey(prev => prev + 1);
+      setRefreshKey((prev) => prev + 1);
     },
     onError: (err) => {
       console.log("addWeight error:", err.message);
@@ -95,7 +100,6 @@ export const App = () => {
     },
   });
 
-  // Handle unauthorized errors
   useEffect(() => {
     const unsubscribe = queryClient.getMutationCache().subscribe((event) => {
       if (
@@ -133,8 +137,16 @@ export const App = () => {
       setError("Invalid starting weight");
       return;
     }
-    console.log("Submitting goal weight:", goalWeightValue, "start weight:", startWeightValue);
-    setGoal.mutate({ goalWeightKg: goalWeightValue, startWeightKg: startWeightValue });
+    console.log(
+      "Submitting goal weight:",
+      goalWeightValue,
+      "start weight:",
+      startWeightValue
+    );
+    setGoal.mutate({
+      goalWeightKg: goalWeightValue,
+      startWeightKg: startWeightValue,
+    });
   };
 
   const handleDeleteAccountClick = () => {
@@ -150,12 +162,16 @@ export const App = () => {
     setOpenDeleteDialog(false);
   };
 
-  // Calculate progress (0–100%)
   const progress =
-    goalData?.goalWeightKg && goalData?.latestWeightKg && goalData?.startWeightKg && goalData.startWeightKg !== goalData.goalWeightKg
+    goalData?.goalWeightKg &&
+    goalData?.latestWeightKg &&
+    goalData?.startWeightKg &&
+    goalData.startWeightKg !== goalData.goalWeightKg
       ? Math.min(
           Math.max(
-            ((goalData.startWeightKg - goalData.latestWeightKg) / (goalData.startWeightKg - goalData.goalWeightKg)) * 100,
+            ((goalData.startWeightKg - goalData.latestWeightKg) /
+              (goalData.startWeightKg - goalData.goalWeightKg)) *
+              100,
             0
           ),
           100
@@ -164,7 +180,10 @@ export const App = () => {
 
   return (
     <Box sx={{ display: "flex" }}>
-      <AppHeader onDrawerToggle={() => setMobileOpen(!mobileOpen)} drawerWidth={drawerWidth} />
+      <AppHeader
+        onDrawerToggle={() => setMobileOpen(!mobileOpen)}
+        drawerWidth={drawerWidth}
+      />
       <Sidebar
         mobileOpen={mobileOpen}
         onDrawerToggle={() => setMobileOpen(!mobileOpen)}
@@ -183,7 +202,9 @@ export const App = () => {
         <Toolbar />
         {user && (
           <>
-            <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
+            <Box
+              sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}
+            >
               <Typography variant="h6">Welcome, {user.email}</Typography>
               <Box sx={{ display: "flex", gap: 1 }}>
                 <Button onClick={logout}>Logout</Button>
@@ -193,7 +214,9 @@ export const App = () => {
               </Box>
             </Box>
             <Box sx={{ mb: 3 }}>
-              <Typography variant="h6" sx={{ mb: 1 }}>Set Weight Goal</Typography>
+              <Typography variant="h6" sx={{ mb: 1 }}>
+                Set Weight Goal
+              </Typography>
               <GoalForm
                 goalWeight={goalWeight}
                 setGoalWeight={setGoalWeight}
@@ -209,7 +232,10 @@ export const App = () => {
                 <Box sx={{ mt: 2 }}>
                   <Typography variant="body1">
                     Goal: {goalData.goalWeightKg.toFixed(1)} kg
-                    {goalData.goalSetAt && ` (Set on ${new Date(goalData.goalSetAt).toLocaleDateString()})`}
+                    {goalData.goalSetAt &&
+                      ` (Set on ${new Date(
+                        goalData.goalSetAt
+                      ).toLocaleDateString()})`}
                   </Typography>
                   {goalData.latestWeightKg && goalData.startWeightKg && (
                     <>
@@ -220,13 +246,25 @@ export const App = () => {
                         Latest Weight: {goalData.latestWeightKg.toFixed(1)} kg
                       </Typography>
                       <Typography variant="body1">
-                        Progress to Goal: {Math.abs(goalData.latestWeightKg - goalData.goalWeightKg).toFixed(1)} kg
-                        {goalData.latestWeightKg > goalData.goalWeightKg ? " to lose" : " to gain"}
+                        Progress to Goal:{" "}
+                        {Math.abs(
+                          goalData.latestWeightKg - goalData.goalWeightKg
+                        ).toFixed(1)}{" "}
+                        kg
+                        {goalData.latestWeightKg > goalData.goalWeightKg
+                          ? " to lose"
+                          : " to gain"}
                       </Typography>
                       <LinearProgress
                         variant="determinate"
                         value={progress}
-                        sx={{ mt: 1, height: 10, bgcolor: "grey.300", "& .MuiLinearProgress-bar": { bgcolor: "#1976d2" } }}
+                        sx={{
+                          mt: 1,
+                          height: 10,
+                          bgcolor: "grey.300",
+                          "& .MuiLinearProgress-bar": { bgcolor: "#1976d2" },
+                        }}
+                        aria-label={`Progress to goal: ${progress.toFixed(0)}%`}
                       />
                       <Typography variant="body2" sx={{ mt: 1 }}>
                         {progress.toFixed(0)}% to goal
@@ -256,11 +294,11 @@ export const App = () => {
               successMessage={addWeight.data?.message}
               onSubmit={handleSubmit}
             />
+            <TrendSummary /> {/* Add TrendSummary */}
           </>
         )}
         <Outlet key={refreshKey} />
 
-        {/* Delete Account Confirmation Dialog */}
         <Dialog
           open={openDeleteDialog}
           onClose={handleCancelDelete}
@@ -270,8 +308,9 @@ export const App = () => {
           <DialogTitle id="delete-account-title">Delete Account</DialogTitle>
           <DialogContent>
             <DialogContentText id="delete-account-description">
-              Are you sure you want to delete your account? This will permanently remove your account and all associated
-              weight measurements. This action cannot be undone.
+              Are you sure you want to delete your account? This will
+              permanently remove your account and all associated weight
+              measurements. This action cannot be undone.
             </DialogContentText>
           </DialogContent>
           <DialogActions>

@@ -3,7 +3,7 @@ import React, { useState, useMemo } from "react";
 import ReactDOM from "react-dom/client";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
-import { ThemeContext } from "./ThemeContext";
+import { ThemeContext } from "./context/ThemeContext";
 import { Root } from "./Root";
 import "./index.css";
 

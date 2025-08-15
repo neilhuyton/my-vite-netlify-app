@@ -1,28 +1,18 @@
 // src/Root.tsx
 import { RouterProvider } from "@tanstack/react-router";
-import { trpc, queryClient } from "./trpc";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider, useAuth } from "./context/AuthContext";
-import { httpLink } from "@trpc/client";
+import { trpc, queryClient, createTRPCClient } from "./trpc";
 import { router } from "./router";
 import { useMemo } from "react";
 
-// Component to handle TRPC client with auth token
+// Component to handle TRPC client
 const TRPCProvider = ({ children }: { children: React.ReactNode }) => {
-  const { token } = useAuth();
+  const { token, logout } = useAuth();
 
   const trpcClientWithHeaders = useMemo(
-    () =>
-      trpc.createClient({
-        links: [
-          httpLink({
-            //url: '/.netlify/functions/trpc', // Use Netlify function endpoint
-            url: "/api/trpc",
-            headers: () => (token ? { Authorization: `Bearer ${token}` } : {}),
-          }),
-        ],
-      }),
-    [token]
+    () => createTRPCClient(token, logout),
+    [token, logout]
   );
 
   return (

@@ -15,6 +15,12 @@ import {
   Paper,
   TablePagination,
   useTheme,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  Button,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { trpc } from "../trpc";
@@ -24,10 +30,30 @@ export default function WeightList() {
   const theme = useTheme();
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [openDialog, setOpenDialog] = useState(false); // State for dialog
+  const [weightToDelete, setWeightToDelete] = useState<number | null>(null); // Track weight ID to delete
 
   const { data, isLoading, isError, error, refetch } = trpc.getWeights.useQuery();
 
   const deleteWeight = trpc.deleteWeight.useMutation({ onSuccess: () => refetch() });
+
+  const handleDeleteClick = (id: number) => {
+    setWeightToDelete(id); // Set the ID of the weight to delete
+    setOpenDialog(true); // Open the confirmation dialog
+  };
+
+  const handleConfirmDelete = () => {
+    if (weightToDelete !== null) {
+      deleteWeight.mutate({ id: weightToDelete }); // Proceed with deletion
+    }
+    setOpenDialog(false); // Close the dialog
+    setWeightToDelete(null); // Reset the ID
+  };
+
+  const handleCancelDelete = () => {
+    setOpenDialog(false); // Close the dialog
+    setWeightToDelete(null); // Reset the ID
+  };
 
   const paginatedMeasurements = data?.measurements.slice(page * rowsPerPage, (page + 1) * rowsPerPage) ?? [];
 
@@ -57,7 +83,7 @@ export default function WeightList() {
                       <TableCell align="right">
                         <IconButton
                           color="error"
-                          onClick={() => deleteWeight.mutate({ id: entry.id })}
+                          onClick={() => handleDeleteClick(entry.id)} // Open dialog instead of direct delete
                           size="small"
                         >
                           <DeleteIcon fontSize="small" />
@@ -88,6 +114,29 @@ export default function WeightList() {
           />
         </CardContent>
       </Card>
+
+      {/* Confirmation Dialog */}
+      <Dialog
+        open={openDialog}
+        onClose={handleCancelDelete}
+        aria-labelledby="delete-confirm-title"
+        aria-describedby="delete-confirm-description"
+      >
+        <DialogTitle id="delete-confirm-title">Confirm Deletion</DialogTitle>
+        <DialogContent>
+          <DialogContentText id="delete-confirm-description">
+            Are you sure you want to delete this weight measurement? This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancelDelete} color="primary">
+            Cancel
+          </Button>
+          <Button onClick={handleConfirmDelete} color="error" autoFocus>
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

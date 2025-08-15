@@ -1,4 +1,4 @@
-// src/router.tsx
+//src/router.tsx
 import {
   createRouter,
   createRootRoute,
@@ -8,6 +8,7 @@ import WeightList from "./components/WeightList";
 import WeightChart from "./components/WeightChart";
 import Login from "./components/Login";
 import Signup from "./components/Signup";
+import VerifyEmail from "./components/VerifyEmail";
 import { AuthenticatedRoute } from "./components/AuthenticatedRoute";
 import { App } from "./App";
 
@@ -58,12 +59,19 @@ const signupRoute = createRoute({
   component: Signup,
 });
 
+const verifyEmailRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/verify-email",
+  component: VerifyEmail,
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   listRoute,
   graphRoute,
   loginRoute,
   signupRoute,
+  verifyEmailRoute,
 ]);
 
 export const router = createRouter({ routeTree });

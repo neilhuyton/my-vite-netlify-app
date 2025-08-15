@@ -1,25 +1,32 @@
 // src/components/Signup.tsx
 import { useState } from "react";
 import { Box, TextField, Button, Typography, Alert } from "@mui/material";
-import { useAuth } from "../context/AuthContext";
-import { trpc } from "../trpc";
 import { useNavigate } from "@tanstack/react-router";
+import { trpc } from "../trpc";
 
 export default function Signup() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const { login } = useAuth();
+  const [success, setSuccess] = useState("");
   const navigate = useNavigate();
+
   const signupMutation = trpc.signup.useMutation({
-    onSuccess: ({ token, user }) => {
-      login(token, user);
-      navigate({ to: "/" });
+    onSuccess: ({ message }) => {
+      setSuccess(message);
+      setError("");
     },
-    onError: (err) => setError(err.message),
+    onError: (err) => {
+      setError(err.message);
+      setSuccess("");
+    },
   });
 
   const handleSubmit = () => {
+    if (!email || !password) {
+      setError("Please fill in all fields");
+      return;
+    }
     setError("");
     signupMutation.mutate({ email, password });
   };
@@ -32,6 +39,11 @@ export default function Signup() {
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
           {error}
+        </Alert>
+      )}
+      {success && (
+        <Alert severity="success" sx={{ mb: 2 }}>
+          {success}
         </Alert>
       )}
       <TextField

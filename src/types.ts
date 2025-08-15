@@ -13,7 +13,7 @@ export type GetWeightsResponse = {
 export interface AddWeightResponse {
   message: string;
   measurement: WeightMeasurement;
-}
+};
 
 export interface AuthResponse {
   token: string;
@@ -25,5 +25,13 @@ export interface SignupResponse {
 }
 
 export interface VerifyEmailResponse {
+  message: string;
+}
+
+export interface RequestPasswordResetResponse {
+  message: string;
+}
+
+export interface ResetPasswordResponse {
   message: string;
 }

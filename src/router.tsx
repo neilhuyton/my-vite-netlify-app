@@ -9,6 +9,8 @@ import WeightChart from "./components/WeightChart";
 import Login from "./components/Login";
 import Signup from "./components/Signup";
 import VerifyEmail from "./components/VerifyEmail";
+import ForgotPassword from "./components/ForgotPassword";
+import ResetPassword from "./components/ResetPassword";
 import { AuthenticatedRoute } from "./components/AuthenticatedRoute";
 import { App } from "./App";
 
@@ -65,6 +67,18 @@ const verifyEmailRoute = createRoute({
   component: VerifyEmail,
 });
 
+const forgotPasswordRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/forgot-password",
+  component: ForgotPassword,
+});
+
+const resetPasswordRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/reset-password",
+  component: ResetPassword,
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   listRoute,
@@ -72,6 +86,8 @@ const routeTree = rootRoute.addChildren([
   loginRoute,
   signupRoute,
   verifyEmailRoute,
+  forgotPasswordRoute,
+  resetPasswordRoute,
 ]);
 
 export const router = createRouter({ routeTree });

@@ -1,9 +1,9 @@
 // src/components/Login.tsx
 import { useState } from "react";
 import { Box, TextField, Button, Typography, Alert } from "@mui/material";
+import { useNavigate } from "@tanstack/react-router";
 import { useAuth } from "../context/AuthContext";
 import { trpc } from "../trpc";
-import { useNavigate } from "@tanstack/react-router";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -11,6 +11,7 @@ export default function Login() {
   const [error, setError] = useState("");
   const { login } = useAuth();
   const navigate = useNavigate();
+
   const loginMutation = trpc.login.useMutation({
     onSuccess: ({ token, user }) => {
       login(token, user);
@@ -20,6 +21,10 @@ export default function Login() {
   });
 
   const handleSubmit = () => {
+    if (!email || !password) {
+      setError("Please fill in all fields");
+      return;
+    }
     setError("");
     loginMutation.mutate({ email, password });
   };
@@ -58,8 +63,14 @@ export default function Login() {
       >
         {loginMutation.isPending ? "Logging in..." : "Login"}
       </Button>
+      <Button
+        sx={{ mt: 1 }}
+        onClick={() => navigate({ to: "/forgot-password" })}
+      >
+        Forgot Password?
+      </Button>
       <Button sx={{ mt: 1 }} onClick={() => navigate({ to: "/signup" })}>
-        Need an account? Sign up
+        Don't have an account? Sign Up
       </Button>
     </Box>
   );

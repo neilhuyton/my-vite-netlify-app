@@ -55,6 +55,9 @@ export default function WeightChart() {
     (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
   );
 
+  const trendLineColor =
+    trendData?.trendSlope && trendData.trendSlope < 0 ? "green" : "red";
+
   const chartData: ChartData<"line", { x: Date; y: number }[], string> = {
     datasets: [
       {
@@ -75,9 +78,9 @@ export default function WeightChart() {
         data: (trendData?.trendPoints || []).map((p) => ({
           x: new Date(p.x),
           y: p.y,
-        })), // Ensure x is Date
-        borderColor: "purple",
-        backgroundColor: "rgba(128, 0, 128, 0.2)",
+        })),
+        borderColor: trendLineColor,
+        backgroundColor: `${trendLineColor}33`, // 20% opacity
         fill: false,
         tension: 0.1,
         borderWidth: 2,

@@ -339,11 +339,21 @@ export const appRouter = t.router({
     });
 
     if (!measurements.length) {
-      return { weeklyAverages: [], rateOfChange: null, trendPoints: [] };
+      return {
+        weeklyAverages: [],
+        monthlyAverages: [],
+        rateOfChange: null,
+        trendPoints: [],
+        trendSlope: null,
+      };
     }
 
     // Group by week (ISO week number)
-    const weeklyAverages = [];
+    const weeklyAverages: {
+      week: string;
+      averageWeightKg: number;
+      date: Date;
+    }[] = [];
     const groupedByWeek: { [key: string]: { weights: number[]; date: Date } } =
       {};
     for (const m of measurements) {
@@ -356,12 +366,37 @@ export const appRouter = t.router({
       }
       groupedByWeek[yearWeek].weights.push(m.weightKg);
     }
-
     for (const [yearWeek, group] of Object.entries(groupedByWeek)) {
       const avg =
         group.weights.reduce((sum, w) => sum + w, 0) / group.weights.length;
       weeklyAverages.push({
         week: yearWeek,
+        averageWeightKg: avg,
+        date: group.date,
+      });
+    }
+
+    // Group by month (YYYY-MM)
+    const monthlyAverages: {
+      month: string;
+      averageWeightKg: number;
+      date: Date;
+    }[] = [];
+    const groupedByMonth: { [key: string]: { weights: number[]; date: Date } } =
+      {};
+    for (const m of measurements) {
+      const date = new Date(m.createdAt);
+      const yearMonth = `${date.getFullYear()}-${date.getMonth() + 1}`;
+      if (!groupedByMonth[yearMonth]) {
+        groupedByMonth[yearMonth] = { weights: [], date };
+      }
+      groupedByMonth[yearMonth].weights.push(m.weightKg);
+    }
+    for (const [yearMonth, group] of Object.entries(groupedByMonth)) {
+      const avg =
+        group.weights.reduce((sum, w) => sum + w, 0) / group.weights.length;
+      monthlyAverages.push({
+        month: yearMonth,
         averageWeightKg: avg,
         date: group.date,
       });
@@ -377,19 +412,32 @@ export const appRouter = t.router({
     const rateOfChange =
       daysDiff > 0 ? (last.weightKg - first.weightKg) / (daysDiff / 7) : null;
 
-    // Simple moving average for trend line (3-point average)
-    const trendPoints = measurements.map((m, i, arr) => {
-      const slice = arr.slice(Math.max(0, i - 1), i + 2);
-      const avg = slice.reduce((sum, x) => sum + x.weightKg, 0) / slice.length;
-      return { x: new Date(m.createdAt), y: avg }; // Ensure x is Date
-    });
+    // Linear regression for trend line
+    const x = measurements.map((_, i) => i);
+    const y = measurements.map((m) => m.weightKg);
+    const n = x.length;
+    const sumX = x.reduce((sum, v) => sum + v, 0);
+    const sumY = y.reduce((sum, v) => sum + v, 0);
+    const sumXY = x.reduce((sum, v, i) => sum + v * y[i], 0);
+    const sumXX = x.reduce((sum, v) => sum + v * v, 0);
+    const slope =
+      n > 1 ? (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX) : 0;
+    const intercept = n > 1 ? (sumY - slope * sumX) / n : y[0] || 0;
+    const trendPoints = measurements.map((m, i) => ({
+      x: new Date(m.createdAt),
+      y: intercept + slope * i,
+    }));
 
     return {
       weeklyAverages: weeklyAverages.sort(
         (a, b) => a.date.getTime() - b.date.getTime()
       ),
+      monthlyAverages: monthlyAverages.sort(
+        (a, b) => a.date.getTime() - b.date.getTime()
+      ),
       rateOfChange,
       trendPoints,
+      trendSlope: slope,
     };
   }),
 });

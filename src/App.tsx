@@ -11,13 +11,15 @@ import {
   DialogContentText,
   DialogActions,
   LinearProgress,
+  Snackbar,
+  Alert,
 } from "@mui/material";
 import { Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import Sidebar from "./components/Sidebar";
 import AppHeader from "./components/AppHeader";
 import WeightForm from "./components/WeightForm";
 import GoalForm from "./components/GoalForm";
-import TrendSummary from "./components/TrendSummary"; // Import TrendSummary
+import TrendSummary from "./components/TrendSummary";
 import { useAuth } from "./context/AuthContext";
 import { trpc, queryClient } from "./trpc";
 
@@ -31,6 +33,7 @@ export const App = () => {
   const [error, setError] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+  const [snackbarOpen, setSnackbarOpen] = useState(false); // Add Snackbar state
   const { user, logout } = useAuth();
   const { pathname } = useLocation();
   const navigate = useNavigate();
@@ -55,6 +58,7 @@ export const App = () => {
       queryClient.invalidateQueries({ queryKey: ["getWeightTrends"] });
       refetchGoal();
       setRefreshKey((prev) => prev + 1);
+      setSnackbarOpen(true); // Show Snackbar
     },
     onError: (err) => {
       console.log("addWeight error:", err.message);
@@ -160,6 +164,10 @@ export const App = () => {
 
   const handleCancelDelete = () => {
     setOpenDeleteDialog(false);
+  };
+
+  const handleSnackbarClose = () => {
+    setSnackbarOpen(false);
   };
 
   const progress =
@@ -294,7 +302,7 @@ export const App = () => {
               successMessage={addWeight.data?.message}
               onSubmit={handleSubmit}
             />
-            <TrendSummary /> {/* Add TrendSummary */}
+            <TrendSummary />
           </>
         )}
         <Outlet key={refreshKey} />
@@ -322,6 +330,21 @@ export const App = () => {
             </Button>
           </DialogActions>
         </Dialog>
+
+        <Snackbar
+          open={snackbarOpen}
+          autoHideDuration={3000}
+          onClose={handleSnackbarClose}
+          anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+        >
+          <Alert
+            onClose={handleSnackbarClose}
+            severity="success"
+            sx={{ width: "100%" }}
+          >
+            Weight added, trends updated!
+          </Alert>
+        </Snackbar>
       </Box>
     </Box>
   );

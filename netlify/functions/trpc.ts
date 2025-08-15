@@ -248,11 +248,20 @@ export const appRouter = t.router({
   })),
 
   addWeight: protectedProcedure
-    .input(z.object({ weightKg: z.number() }))
+    .input(
+      z.object({
+        weightKg: z.number(),
+        note: z.string().optional(), // Add optional note field
+      })
+    )
     .mutation(async ({ ctx, input }) => ({
       message: "Weight added",
       measurement: await ctx.prisma.weightMeasurement.create({
-        data: { weightKg: input.weightKg, userId: ctx.user!.id },
+        data: {
+          weightKg: input.weightKg,
+          note: input.note, // Include note in the data
+          userId: ctx.user!.id,
+        },
       }),
     })),
 

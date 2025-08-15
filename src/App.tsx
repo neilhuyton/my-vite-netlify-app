@@ -12,6 +12,7 @@ export const App = () => {
   const drawerWidth = 200;
   const [mobileOpen, setMobileOpen] = useState(false);
   const [weight, setWeight] = useState("");
+  const [note, setNote] = useState(""); // State for note
   const [error, setError] = useState("");
   const [refreshKey, setRefreshKey] = useState(0); // Add to force Outlet re-render
   const { user, logout } = useAuth();
@@ -22,6 +23,7 @@ export const App = () => {
     onSuccess: (response) => {
       console.log("addWeight response:", response);
       setWeight("");
+      setNote(""); // Reset note on success
       setError("");
       console.log("Invalidating getWeights query");
       // Clear cache and invalidate to ensure fresh data
@@ -53,14 +55,14 @@ export const App = () => {
     return () => unsubscribe();
   }, [navigate, user]);
 
-  const handleSubmit = (value: string) => {
+  const handleSubmit = (value: string, note?: string) => {
     const weightValue = parseFloat(value);
     if (isNaN(weightValue) || weightValue <= 0) {
       setError("Invalid weight");
       return;
     }
-    console.log("Submitting weight:", weightValue);
-    addWeight.mutate({ weightKg: weightValue });
+    console.log("Submitting weight:", weightValue, "note:", note);
+    addWeight.mutate({ weightKg: weightValue, note });
   };
 
   return (
@@ -91,6 +93,8 @@ export const App = () => {
             <WeightForm
               weight={weight}
               setWeight={setWeight}
+              note={note} // Pass note state
+              setNote={setNote} // Pass setNote function
               error={error}
               isPending={addWeight.isPending}
               isSuccess={addWeight.isSuccess}
@@ -99,7 +103,7 @@ export const App = () => {
             />
           </>
         )}
-        <Outlet key={refreshKey} /> {/* Force re-render with refreshKey */}
+        <Outlet key={refreshKey} />
       </Box>
     </Box>
   );

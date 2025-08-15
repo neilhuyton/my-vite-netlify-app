@@ -1,3 +1,4 @@
+// prisma/schema.prisma
 generator client {
   provider      = "prisma-client-js"
   binaryTargets = ["native", "rhel-openssl-3.0.x"]
@@ -24,6 +25,7 @@ model User {
 model WeightMeasurement {
   id        Int      @id @default(autoincrement())
   weightKg  Float
+  note      String?  // Add optional note field
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   userId    Int

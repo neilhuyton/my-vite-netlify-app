@@ -10,11 +10,13 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
+  LinearProgress,
 } from "@mui/material";
 import { Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import Sidebar from "./components/Sidebar";
 import AppHeader from "./components/AppHeader";
 import WeightForm from "./components/WeightForm";
+import GoalForm from "./components/GoalForm";
 import { useAuth } from "./context/AuthContext";
 import { trpc, queryClient } from "./trpc";
 
@@ -23,12 +25,19 @@ export const App = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [weight, setWeight] = useState("");
   const [note, setNote] = useState("");
+  const [goalWeight, setGoalWeight] = useState("");
+  const [startWeight, setStartWeight] = useState(""); // Add startWeight
   const [error, setError] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
-  const [openDeleteDialog, setOpenDeleteDialog] = useState(false); // State for delete confirmation dialog
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const { user, logout } = useAuth();
   const { pathname } = useLocation();
   const navigate = useNavigate();
+
+  // Fetch goal and weights
+  const { data: goalData, refetch: refetchGoal } = trpc.getGoal.useQuery(undefined, {
+    enabled: !!user,
+  });
 
   const addWeight = trpc.addWeight.useMutation({
     onSuccess: (response) => {
@@ -39,6 +48,7 @@ export const App = () => {
       console.log("Invalidating getWeights query");
       queryClient.removeQueries({ queryKey: ["getWeights"] });
       queryClient.invalidateQueries({ queryKey: ["getWeights"] });
+      refetchGoal();
       setRefreshKey(prev => prev + 1);
     },
     onError: (err) => {
@@ -47,11 +57,37 @@ export const App = () => {
     },
   });
 
+  const setGoal = trpc.setGoal.useMutation({
+    onSuccess: (response) => {
+      console.log("setGoal response:", response);
+      setGoalWeight("");
+      setStartWeight("");
+      setError("");
+      refetchGoal();
+    },
+    onError: (err) => {
+      console.log("setGoal error:", err.message);
+      setError(err.message);
+    },
+  });
+
+  const clearGoal = trpc.clearGoal.useMutation({
+    onSuccess: () => {
+      console.log("Goal cleared successfully");
+      setError("");
+      refetchGoal();
+    },
+    onError: (err) => {
+      console.log("clearGoal error:", err.message);
+      setError(err.message);
+    },
+  });
+
   const deleteAccount = trpc.deleteAccount.useMutation({
     onSuccess: () => {
       console.log("Account deleted successfully");
-      logout(); // Log out the user
-      navigate({ to: "/login" }); // Redirect to login page
+      logout();
+      navigate({ to: "/login" });
     },
     onError: (err) => {
       console.log("deleteAccount error:", err.message);
@@ -86,18 +122,45 @@ export const App = () => {
     addWeight.mutate({ weightKg: weightValue, note });
   };
 
+  const handleGoalSubmit = (goalValue: string, startValue: string) => {
+    const goalWeightValue = parseFloat(goalValue);
+    const startWeightValue = parseFloat(startValue);
+    if (isNaN(goalWeightValue) || goalWeightValue <= 0) {
+      setError("Invalid goal weight");
+      return;
+    }
+    if (isNaN(startWeightValue) || startWeightValue <= 0) {
+      setError("Invalid starting weight");
+      return;
+    }
+    console.log("Submitting goal weight:", goalWeightValue, "start weight:", startWeightValue);
+    setGoal.mutate({ goalWeightKg: goalWeightValue, startWeightKg: startWeightValue });
+  };
+
   const handleDeleteAccountClick = () => {
-    setOpenDeleteDialog(true); // Open confirmation dialog
+    setOpenDeleteDialog(true);
   };
 
   const handleConfirmDelete = () => {
     setOpenDeleteDialog(false);
-    deleteAccount.mutate(); // Trigger account deletion
+    deleteAccount.mutate();
   };
 
   const handleCancelDelete = () => {
-    setOpenDeleteDialog(false); // Close dialog without deleting
+    setOpenDeleteDialog(false);
   };
+
+  // Calculate progress (0–100%)
+  const progress =
+    goalData?.goalWeightKg && goalData?.latestWeightKg && goalData?.startWeightKg && goalData.startWeightKg !== goalData.goalWeightKg
+      ? Math.min(
+          Math.max(
+            ((goalData.startWeightKg - goalData.latestWeightKg) / (goalData.startWeightKg - goalData.goalWeightKg)) * 100,
+            0
+          ),
+          100
+        )
+      : 0;
 
   return (
     <Box sx={{ display: "flex" }}>
@@ -128,6 +191,59 @@ export const App = () => {
                   Delete Account
                 </Button>
               </Box>
+            </Box>
+            <Box sx={{ mb: 3 }}>
+              <Typography variant="h6" sx={{ mb: 1 }}>Set Weight Goal</Typography>
+              <GoalForm
+                goalWeight={goalWeight}
+                setGoalWeight={setGoalWeight}
+                startWeight={startWeight}
+                setStartWeight={setStartWeight}
+                error={error}
+                isPending={setGoal.isPending}
+                isSuccess={setGoal.isSuccess}
+                successMessage={setGoal.data?.message}
+                onSubmit={handleGoalSubmit}
+              />
+              {goalData?.goalWeightKg && (
+                <Box sx={{ mt: 2 }}>
+                  <Typography variant="body1">
+                    Goal: {goalData.goalWeightKg.toFixed(1)} kg
+                    {goalData.goalSetAt && ` (Set on ${new Date(goalData.goalSetAt).toLocaleDateString()})`}
+                  </Typography>
+                  {goalData.latestWeightKg && goalData.startWeightKg && (
+                    <>
+                      <Typography variant="body1">
+                        Starting Weight: {goalData.startWeightKg.toFixed(1)} kg
+                      </Typography>
+                      <Typography variant="body1">
+                        Latest Weight: {goalData.latestWeightKg.toFixed(1)} kg
+                      </Typography>
+                      <Typography variant="body1">
+                        Progress to Goal: {Math.abs(goalData.latestWeightKg - goalData.goalWeightKg).toFixed(1)} kg
+                        {goalData.latestWeightKg > goalData.goalWeightKg ? " to lose" : " to gain"}
+                      </Typography>
+                      <LinearProgress
+                        variant="determinate"
+                        value={progress}
+                        sx={{ mt: 1, height: 10, bgcolor: "grey.300", "& .MuiLinearProgress-bar": { bgcolor: "#1976d2" } }}
+                      />
+                      <Typography variant="body2" sx={{ mt: 1 }}>
+                        {progress.toFixed(0)}% to goal
+                      </Typography>
+                    </>
+                  )}
+                  <Button
+                    variant="outlined"
+                    color="secondary"
+                    onClick={() => clearGoal.mutate()}
+                    disabled={clearGoal.isPending || !goalData?.goalWeightKg}
+                    sx={{ mt: 1 }}
+                  >
+                    Clear Goal
+                  </Button>
+                </Box>
+              )}
             </Box>
             <WeightForm
               weight={weight}

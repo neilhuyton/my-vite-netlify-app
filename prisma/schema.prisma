@@ -19,6 +19,9 @@ model User {
   resetPasswordTokenExpiresAt DateTime?
   createdAt                 DateTime          @default(now())
   updatedAt                 DateTime          @updatedAt
+  goalWeightKg              Float?            // Optional goal weight
+  goalSetAt                 DateTime?         // Timestamp for goal
+  startWeightKg             Float?            // Starting weight for goal
   weights                   WeightMeasurement[]
 }
 
@@ -29,5 +32,5 @@ model WeightMeasurement {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   userId    Int
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade) // Add onDelete: Cascade
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

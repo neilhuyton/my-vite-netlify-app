@@ -282,6 +282,49 @@ export const appRouter = t.router({
 
     return { message: "Account deleted successfully" };
   }),
+
+  setGoal: protectedProcedure
+    .input(z.object({
+      goalWeightKg: z.number().positive(),
+      startWeightKg: z.number().positive(), // Add startWeightKg
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const user = await ctx.prisma.user.update({
+        where: { id: ctx.user!.id },
+        data: {
+          goalWeightKg: input.goalWeightKg,
+          startWeightKg: input.startWeightKg, // Save start weight
+          goalSetAt: new Date(),
+        },
+      });
+      return { message: "Goal set successfully", goalWeightKg: user.goalWeightKg };
+    }),
+
+  getGoal: protectedProcedure.query(async ({ ctx }) => {
+    const user = await ctx.prisma.user.findUnique({
+      where: { id: ctx.user!.id },
+      select: { goalWeightKg: true, goalSetAt: true, startWeightKg: true }, // Add startWeightKg
+    });
+    const latestWeight = await ctx.prisma.weightMeasurement.findFirst({
+      where: { userId: ctx.user!.id },
+      orderBy: { createdAt: "desc" },
+      select: { weightKg: true },
+    });
+    return {
+      goalWeightKg: user?.goalWeightKg || null,
+      goalSetAt: user?.goalSetAt || null,
+      startWeightKg: user?.startWeightKg || null, // Return startWeightKg
+      latestWeightKg: latestWeight?.weightKg || null,
+    };
+  }),
+
+  clearGoal: protectedProcedure.mutation(async ({ ctx }) => {
+    await ctx.prisma.user.update({
+      where: { id: ctx.user!.id },
+      data: { goalWeightKg: null, goalSetAt: null, startWeightKg: null },
+    });
+    return { message: "Goal cleared successfully" };
+  }),
 });
 
 export const handler = async (event: HandlerEvent, context: HandlerContext) => {

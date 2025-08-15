@@ -1,6 +1,16 @@
 // src/App.tsx
 import { useState, useEffect } from "react";
-import { Box, Toolbar, Button, Typography } from "@mui/material";
+import {
+  Box,
+  Toolbar,
+  Button,
+  Typography,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+} from "@mui/material";
 import { Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import Sidebar from "./components/Sidebar";
 import AppHeader from "./components/AppHeader";
@@ -12,9 +22,10 @@ export const App = () => {
   const drawerWidth = 200;
   const [mobileOpen, setMobileOpen] = useState(false);
   const [weight, setWeight] = useState("");
-  const [note, setNote] = useState(""); // State for note
+  const [note, setNote] = useState("");
   const [error, setError] = useState("");
-  const [refreshKey, setRefreshKey] = useState(0); // Add to force Outlet re-render
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false); // State for delete confirmation dialog
   const { user, logout } = useAuth();
   const { pathname } = useLocation();
   const navigate = useNavigate();
@@ -23,18 +34,28 @@ export const App = () => {
     onSuccess: (response) => {
       console.log("addWeight response:", response);
       setWeight("");
-      setNote(""); // Reset note on success
+      setNote("");
       setError("");
       console.log("Invalidating getWeights query");
-      // Clear cache and invalidate to ensure fresh data
       queryClient.removeQueries({ queryKey: ["getWeights"] });
       queryClient.invalidateQueries({ queryKey: ["getWeights"] });
-      // Force Outlet re-render
       setRefreshKey(prev => prev + 1);
     },
     onError: (err) => {
       console.log("addWeight error:", err.message);
       setError(err.message);
+    },
+  });
+
+  const deleteAccount = trpc.deleteAccount.useMutation({
+    onSuccess: () => {
+      console.log("Account deleted successfully");
+      logout(); // Log out the user
+      navigate({ to: "/login" }); // Redirect to login page
+    },
+    onError: (err) => {
+      console.log("deleteAccount error:", err.message);
+      setError("Failed to delete account: " + err.message);
     },
   });
 
@@ -65,6 +86,19 @@ export const App = () => {
     addWeight.mutate({ weightKg: weightValue, note });
   };
 
+  const handleDeleteAccountClick = () => {
+    setOpenDeleteDialog(true); // Open confirmation dialog
+  };
+
+  const handleConfirmDelete = () => {
+    setOpenDeleteDialog(false);
+    deleteAccount.mutate(); // Trigger account deletion
+  };
+
+  const handleCancelDelete = () => {
+    setOpenDeleteDialog(false); // Close dialog without deleting
+  };
+
   return (
     <Box sx={{ display: "flex" }}>
       <AppHeader onDrawerToggle={() => setMobileOpen(!mobileOpen)} drawerWidth={drawerWidth} />
@@ -88,13 +122,18 @@ export const App = () => {
           <>
             <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
               <Typography variant="h6">Welcome, {user.email}</Typography>
-              <Button onClick={logout}>Logout</Button>
+              <Box sx={{ display: "flex", gap: 1 }}>
+                <Button onClick={logout}>Logout</Button>
+                <Button color="error" onClick={handleDeleteAccountClick}>
+                  Delete Account
+                </Button>
+              </Box>
             </Box>
             <WeightForm
               weight={weight}
               setWeight={setWeight}
-              note={note} // Pass note state
-              setNote={setNote} // Pass setNote function
+              note={note}
+              setNote={setNote}
               error={error}
               isPending={addWeight.isPending}
               isSuccess={addWeight.isSuccess}
@@ -104,6 +143,30 @@ export const App = () => {
           </>
         )}
         <Outlet key={refreshKey} />
+
+        {/* Delete Account Confirmation Dialog */}
+        <Dialog
+          open={openDeleteDialog}
+          onClose={handleCancelDelete}
+          aria-labelledby="delete-account-title"
+          aria-describedby="delete-account-description"
+        >
+          <DialogTitle id="delete-account-title">Delete Account</DialogTitle>
+          <DialogContent>
+            <DialogContentText id="delete-account-description">
+              Are you sure you want to delete your account? This will permanently remove your account and all associated
+              weight measurements. This action cannot be undone.
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCancelDelete} color="primary">
+              Cancel
+            </Button>
+            <Button onClick={handleConfirmDelete} color="error" autoFocus>
+              Delete
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Box>
     </Box>
   );

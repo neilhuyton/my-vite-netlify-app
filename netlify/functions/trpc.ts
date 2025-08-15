@@ -272,6 +272,16 @@ export const appRouter = t.router({
         where: { id: input.id, userId: ctx.user!.id },
       })
     ),
+
+  deleteAccount: protectedProcedure.mutation(async ({ ctx }) => {
+    const userId = ctx.user!.id;
+
+    await ctx.prisma.user.delete({
+      where: { id: userId },
+    });
+
+    return { message: "Account deleted successfully" };
+  }),
 });
 
 export const handler = async (event: HandlerEvent, context: HandlerContext) => {

@@ -1,7 +1,6 @@
 // prisma/schema.prisma
 generator client {
-  provider      = "prisma-client-js"
-  binaryTargets = ["native", "rhel-openssl-3.0.x"]
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -10,27 +9,35 @@ datasource db {
 }
 
 model User {
-  id                        Int               @id @default(autoincrement())
-  email                     String            @unique
-  password                  String
-  isEmailVerified           Boolean           @default(false)
-  verificationToken         String?           @unique
-  resetPasswordToken        String?           @unique
-  resetPasswordTokenExpiresAt DateTime?
-  createdAt                 DateTime          @default(now())
-  updatedAt                 DateTime          @updatedAt
-  goalWeightKg              Float?            // Optional goal weight
-  goalSetAt                 DateTime?         // Timestamp for goal
-  startWeightKg             Float?            // Starting weight for goal
-  weights                   WeightMeasurement[]
+  id                          String   @id @default(uuid())
+  email                       String   @unique
+  password                    String
+  verificationToken           String?  // Add for email verification
+  isEmailVerified             Boolean  @default(false) // Add for email verification status
+  resetPasswordToken          String?  // Add for password reset
+  resetPasswordTokenExpiresAt DateTime? // Add for password reset expiration
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
+  weights                     WeightMeasurement[]
+  goal                        Goal?
+  @@index([createdAt])
 }
 
 model WeightMeasurement {
-  id        Int      @id @default(autoincrement())
+  id        String   @id @default(uuid())
+  userId    String
   weightKg  Float
   note      String?
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  userId    Int
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([createdAt])
+}
+
+model Goal {
+  id            String   @id @default(uuid())
+  userId        String   @unique
+  goalWeightKg  Float
+  startWeightKg Float
+  goalSetAt     DateTime @default(now())
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

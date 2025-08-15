@@ -1,6 +1,6 @@
 // src/components/Login.tsx
-import { useState, useEffect } from "react";
-import { Box, TextField, Button, Typography } from "@mui/material";
+import { useState } from "react";
+import { Box, Button, TextField, Typography } from "@mui/material";
 import { useNavigate } from "@tanstack/react-router";
 import { useAuth } from "../context/AuthContext";
 import { trpc } from "../trpc";
@@ -9,71 +9,79 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const { user, login } = useAuth();
   const navigate = useNavigate();
-
-  // Redirect if already logged in
-  useEffect(() => {
-    if (user) {
-      navigate({ to: "/" });
-    }
-  }, [user, navigate]);
+  const { login } = useAuth();
 
   const loginMutation = trpc.login.useMutation({
-    onSuccess: (data) => {
-      login(data.token, data.user);
+    onSuccess: (data: { token: string; user: { id: string; email: string } }) => {
+      console.log("Login success:", { email, token: data.token });
+      login(data.token, { id: data.user.id, email: data.user.email });
+      setEmail("");
+      setPassword("");
+      setError("");
       navigate({ to: "/" });
     },
-    onError: (err) => {
-      setError(err.message);
+    onError: (err: any) => {
+      console.error("Login error:", err, { email, password });
+      setError(
+        err.message || "Login failed. Please check your email and password."
+      );
     },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-    loginMutation.mutate({ email, password });
+    if (!email.trim() || !password.trim()) {
+      setError("Email and password are required");
+      return;
+    }
+    console.log("Submitting login:", { email, password });
+    loginMutation.mutate({ email: email.trim(), password: password.trim() });
   };
 
   return (
-    <Box sx={{ maxWidth: 400, mx: "auto", p: 3 }}>
-      <Typography variant="h5" sx={{ mb: 3, textAlign: "center" }}>
+    <Box
+      sx={{ p: 3, maxWidth: 400, mx: "auto" }}
+      component="form"
+      onSubmit={handleSubmit}
+    >
+      <Typography variant="h5" sx={{ mb: 2 }}>
         Login
       </Typography>
-      <Box component="form" onSubmit={handleSubmit} sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-        <TextField
-          label="Email"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          variant="outlined"
-          required
-          fullWidth
-        />
-        <TextField
-          label="Password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          variant="outlined"
-          required
-          fullWidth
-        />
-        <Button
-          type="submit"
-          variant="contained"
-          disabled={loginMutation.isPending}
-          fullWidth
-          sx={{ py: 1.5, fontSize: "1rem" }}
-        >
-          {loginMutation.isPending ? "Logging in..." : "Login"}
-        </Button>
-      </Box>
-      {error && (
-        <Typography color="error" sx={{ mt: 2, textAlign: "center" }}>
+      <TextField
+        label="Email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        fullWidth
+        sx={{ mb: 2 }}
+        type="email"
+        required
+        error={!!error && !email.trim()}
+        helperText={error && !email.trim() ? "Email is required" : ""}
+      />
+      <TextField
+        label="Password"
+        type="password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        fullWidth
+        sx={{ mb: 2 }}
+        required
+        error={!!error && !password.trim()}
+        helperText={error && !password.trim() ? "Password is required" : ""}
+      />
+      {error && email.trim() && password.trim() && (
+        <Typography color="error" sx={{ mb: 2 }}>
           {error}
         </Typography>
       )}
+      <Button
+        variant="contained"
+        type="submit"
+        disabled={loginMutation.isPending}
+      >
+        {loginMutation.isPending ? "Logging in..." : "Login"}
+      </Button>
     </Box>
   );
 }

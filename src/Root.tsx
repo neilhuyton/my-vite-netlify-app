@@ -6,13 +6,13 @@ import { trpc, queryClient, createTRPCClient } from "./trpc";
 import { router } from "./router";
 import { useMemo } from "react";
 
-// Component to handle TRPC client
 const TRPCProvider = ({ children }: { children: React.ReactNode }) => {
-  const { token, logout } = useAuth();
-
+  const { user, logout } = useAuth();
   const trpcClientWithHeaders = useMemo(
-    () => createTRPCClient(token, logout),
-    [token, logout]
+    () => createTRPCClient(user?.token || null, () => {
+      logout();
+    }),
+    [user, logout]
   );
 
   return (

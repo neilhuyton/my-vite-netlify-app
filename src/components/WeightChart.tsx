@@ -1,5 +1,5 @@
 // src/components/WeightChart.tsx
-import { Box, Typography } from "@mui/material";
+import { Box, Typography, Select, MenuItem } from "@mui/material";
 import {
   Chart as ChartJS,
   LineController,
@@ -17,6 +17,7 @@ import "chartjs-adapter-date-fns";
 import { trpc } from "../trpc";
 import annotationPlugin from "chartjs-plugin-annotation";
 import type { AnnotationOptions } from "chartjs-plugin-annotation";
+import { useState } from "react";
 
 ChartJS.register(
   LineController,
@@ -31,41 +32,26 @@ ChartJS.register(
 );
 
 export default function WeightChart() {
-  const {
-    data: weightsData,
-    isLoading,
-    isError,
-    error,
-  } = trpc.getWeights.useQuery();
-  const { data: goalData } = trpc.getGoal.useQuery(undefined, {
-    enabled: !!weightsData,
-  });
-  const { data: trendData } = trpc.getWeightTrends.useQuery(undefined, {
-    enabled: !!weightsData,
-  });
+  const [timeRange, setTimeRange] = useState<"30d" | "90d" | "all">("all");
+  const { data: weightsData, isLoading, isError, error } = trpc.getWeights.useQuery({ timeRange });
+  const { data: goalData } = trpc.getGoal.useQuery(undefined, { enabled: !!weightsData });
+  const { data: trendData } = trpc.getWeightTrends.useQuery({ timeRange }, { enabled: !!weightsData });
 
-  if (isLoading)
-    return <Box sx={{ p: 2, textAlign: "center" }}>Loading...</Box>;
-  if (isError)
-    return <Box sx={{ p: 2, textAlign: "center" }}>Error: {error.message}</Box>;
-  if (!weightsData?.measurements.length)
-    return <Box sx={{ p: 2, textAlign: "center" }}>No data</Box>;
+  if (isLoading) return <Box sx={{ p: 2, textAlign: "center" }}>Loading...</Box>;
+  if (isError) return <Box sx={{ p: 2, textAlign: "center" }}>Error: {error.message}</Box>;
+  if (!weightsData?.measurements.length) return <Box sx={{ p: 2, textAlign: "center" }}>No data</Box>;
 
   const measurements = weightsData.measurements.sort(
     (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
   );
 
-  const trendLineColor =
-    trendData?.trendSlope && trendData.trendSlope < 0 ? "green" : "red";
+  const trendLineColor = trendData?.trendSlope && trendData.trendSlope < 0 ? "green" : "red";
 
   const chartData: ChartData<"line", { x: Date; y: number }[], string> = {
     datasets: [
       {
         label: "Weight (kg)",
-        data: measurements.map((m) => ({
-          x: new Date(m.createdAt),
-          y: m.weightKg,
-        })),
+        data: measurements.map((m) => ({ x: new Date(m.createdAt), y: m.weightKg })),
         borderColor: "rgba(75, 192, 192, 1)",
         backgroundColor: "rgba(75, 192, 192, 0.2)",
         fill: false,
@@ -75,12 +61,9 @@ export default function WeightChart() {
       },
       {
         label: "Trend Line",
-        data: (trendData?.trendPoints || []).map((p) => ({
-          x: new Date(p.x),
-          y: p.y,
-        })),
+        data: (trendData?.trendPoints || []).map((p) => ({ x: new Date(p.x), y: p.y })),
         borderColor: trendLineColor,
-        backgroundColor: `${trendLineColor}33`, // 20% opacity
+        backgroundColor: `${trendLineColor}33`,
         fill: false,
         tension: 0.1,
         borderWidth: 2,
@@ -122,40 +105,33 @@ export default function WeightChart() {
         title: { display: true, text: "Weight (kg)" },
         beginAtZero: false,
         min: goalData?.goalWeightKg
-          ? Math.min(
-              goalData.goalWeightKg - 5,
-              ...measurements.map((m) => m.weightKg)
-            )
+          ? Math.min(goalData.goalWeightKg - 5, ...measurements.map((m) => m.weightKg))
           : undefined,
         max: goalData?.goalWeightKg
-          ? Math.max(
-              goalData.goalWeightKg + 5,
-              ...measurements.map((m) => m.weightKg)
-            )
+          ? Math.max(goalData.goalWeightKg + 5, ...measurements.map((m) => m.weightKg))
           : undefined,
       },
     },
     plugins: {
-      tooltip: {
-        callbacks: {
-          label: (ctx: any) => `${ctx.dataset.label}: ${ctx.parsed.y} kg`,
-        },
-      },
+      tooltip: { callbacks: { label: (ctx: any) => `${ctx.dataset.label}: ${ctx.parsed.y} kg` } },
       annotation: { annotations },
     },
   };
 
   return (
     <Box sx={{ mt: 2, height: { xs: 300, sm: 400 } }}>
-      <Typography variant="h6" sx={{ mb: 1 }}>
-        Weight Trend
-      </Typography>
-      <Chart
-        type="line"
-        data={chartData}
-        options={chartOptions}
-        aria-label="Weight trend chart with goal line and trend line"
-      />
+      <Typography variant="h6" sx={{ mb: 1 }}>Weight Trend</Typography>
+      <Select
+        value={timeRange}
+        onChange={(e) => setTimeRange(e.target.value as "30d" | "90d" | "all")}
+        sx={{ mb: 1 }}
+        aria-label="Select time range"
+      >
+        <MenuItem value="30d">Last 30 Days</MenuItem>
+        <MenuItem value="90d">Last 90 Days</MenuItem>
+        <MenuItem value="all">All Time</MenuItem>
+      </Select>
+      <Chart type="line" data={chartData} options={chartOptions} aria-label="Weight trend chart with goal line and trend line" />
     </Box>
   );
 }

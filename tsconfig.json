@@ -14,9 +14,10 @@
     "paths": {
       "@/*": ["src/*"],
       "netlify/functions/trpc": ["netlify/functions/trpc.ts"]
-    }
+    },
+    "types": ["vite/client"] // Add Vite types
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "vite-env.d.ts"], // Include vite-env.d.ts
   "exclude": ["dist", "node_modules", "netlify/functions/dist/**/*"],
   "references": [{ "path": "./netlify/functions/tsconfig.json" }]
 }

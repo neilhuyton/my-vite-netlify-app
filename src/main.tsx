@@ -10,7 +10,7 @@ import { router } from "./router";
 
 console.log("main.tsx: Initializing");
 
-const TRPCWrapper = () => {
+export const TRPCWrapper = () => {
   const { user, logout } = useAuth();
   const trpcClient = createTRPCClient(user?.token || null, logout);
 
@@ -24,7 +24,7 @@ const TRPCWrapper = () => {
   );
 };
 
-const AppWrapper = () => {
+export const AppWrapper = () => {
   console.log("main.tsx: Rendering AppWrapper");
   return (
     <ThemeProvider theme={createTheme()}>

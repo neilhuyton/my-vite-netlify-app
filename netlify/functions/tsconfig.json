@@ -13,6 +13,9 @@
     "composite": true,
     "jsx": "react-jsx"
   },
-  "include": ["trpc.ts"],
+  "include": [
+    "./*.ts",
+    "./routers/*.ts"
+  ],
   "exclude": ["dist/**/*"]
 }

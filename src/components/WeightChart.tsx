@@ -1,4 +1,3 @@
-// src/components/WeightChart.tsx
 import { Box, Typography, Select, MenuItem } from "@mui/material";
 import {
   Chart as ChartJS,
@@ -11,6 +10,7 @@ import {
   Tooltip,
   Legend,
   ChartData,
+  TooltipItem,
 } from "chart.js";
 import { Chart } from "react-chartjs-2";
 import "chartjs-adapter-date-fns";
@@ -18,6 +18,7 @@ import { trpc } from "../trpc";
 import annotationPlugin from "chartjs-plugin-annotation";
 import type { AnnotationOptions } from "chartjs-plugin-annotation";
 import { useState } from "react";
+import type { AppRouter } from "../../netlify/functions/router";
 
 ChartJS.register(
   LineController,
@@ -31,18 +32,24 @@ ChartJS.register(
   annotationPlugin
 );
 
+type WeightMeasurement = { id: string; weightKg: number; createdAt: string; note?: string | null };
+type GetWeightsResponse = { measurements: WeightMeasurement[] };
+type GoalData = { goalWeightKg: number; startWeightKg: number; goalSetAt?: string; latestWeightKg?: number };
+type TrendPoint = { x: string; y: number };
+type GetWeightTrendsResponse = { trendPoints: TrendPoint[]; trendSlope?: number };
+
 export default function WeightChart() {
   const [timeRange, setTimeRange] = useState<"30d" | "90d" | "all">("all");
-  const { data: weightsData, isLoading, isError, error } = trpc.getWeights.useQuery({ timeRange });
-  const { data: goalData } = trpc.getGoal.useQuery(undefined, { enabled: !!weightsData });
-  const { data: trendData } = trpc.getWeightTrends.useQuery({ timeRange }, { enabled: !!weightsData });
+  const { data: weightsData, isLoading, isError, error } = trpc.weight.getWeights.useQuery({ timeRange });
+  const { data: goalData } = trpc.goal.getGoal.useQuery(undefined, { enabled: !!weightsData });
+  const { data: trendData } = trpc.trend.getWeightTrends.useQuery({ timeRange }, { enabled: !!weightsData });
 
   if (isLoading) return <Box sx={{ p: 2, textAlign: "center" }}>Loading...</Box>;
   if (isError) return <Box sx={{ p: 2, textAlign: "center" }}>Error: {error.message}</Box>;
   if (!weightsData?.measurements.length) return <Box sx={{ p: 2, textAlign: "center" }}>No data</Box>;
 
   const measurements = weightsData.measurements.sort(
-    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    (a: WeightMeasurement, b: WeightMeasurement) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
   );
 
   const trendLineColor = trendData?.trendSlope && trendData.trendSlope < 0 ? "green" : "red";
@@ -51,7 +58,7 @@ export default function WeightChart() {
     datasets: [
       {
         label: "Weight (kg)",
-        data: measurements.map((m) => ({ x: new Date(m.createdAt), y: m.weightKg })),
+        data: measurements.map((m: WeightMeasurement) => ({ x: new Date(m.createdAt), y: m.weightKg })),
         borderColor: "rgba(75, 192, 192, 1)",
         backgroundColor: "rgba(75, 192, 192, 0.2)",
         fill: false,
@@ -61,7 +68,7 @@ export default function WeightChart() {
       },
       {
         label: "Trend Line",
-        data: (trendData?.trendPoints || []).map((p) => ({ x: new Date(p.x), y: p.y })),
+        data: (trendData?.trendPoints || []).map((p: TrendPoint) => ({ x: new Date(p.x), y: p.y })),
         borderColor: trendLineColor,
         backgroundColor: `${trendLineColor}33`,
         fill: false,
@@ -105,15 +112,19 @@ export default function WeightChart() {
         title: { display: true, text: "Weight (kg)" },
         beginAtZero: false,
         min: goalData?.goalWeightKg
-          ? Math.min(goalData.goalWeightKg - 5, ...measurements.map((m) => m.weightKg))
+          ? Math.min(goalData.goalWeightKg - 5, ...measurements.map((m: WeightMeasurement) => m.weightKg))
           : undefined,
         max: goalData?.goalWeightKg
-          ? Math.max(goalData.goalWeightKg + 5, ...measurements.map((m) => m.weightKg))
+          ? Math.max(goalData.goalWeightKg + 5, ...measurements.map((m: WeightMeasurement) => m.weightKg))
           : undefined,
       },
     },
     plugins: {
-      tooltip: { callbacks: { label: (ctx: any) => `${ctx.dataset.label}: ${ctx.parsed.y} kg` } },
+      tooltip: {
+        callbacks: {
+          label: (ctx: TooltipItem<"line">) => `${ctx.dataset.label}: ${ctx.parsed.y} kg`,
+        },
+      },
       annotation: { annotations },
     },
   };

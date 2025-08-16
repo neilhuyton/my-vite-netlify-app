@@ -1,17 +1,24 @@
-// src/components/TrendSummary.tsx
 import { Box, Typography, Paper, Select, MenuItem } from "@mui/material";
 import { useState } from "react";
 import { trpc } from "../trpc";
 import { useAuth } from "../context/AuthContext";
 
+type TrendItem = { week?: string; month?: string; averageWeightKg: number };
+type GetWeightTrendsResponse = {
+  weeklyAverages: TrendItem[];
+  monthlyAverages: TrendItem[];
+  rateOfChange?: number;
+};
+
 export default function TrendSummary() {
   const { user } = useAuth();
   const [view, setView] = useState<"weekly" | "monthly">("weekly");
   const [timeRange, setTimeRange] = useState<"30d" | "90d" | "all">("all");
-  const { data, isLoading, isError, error } = trpc.getWeightTrends.useQuery(
-    { timeRange },
-    { enabled: !!user?.token }
-  );
+  const { data, isLoading, isError, error } =
+    trpc.trend.getWeightTrends.useQuery(
+      { timeRange },
+      { enabled: !!user?.token }
+    );
 
   if (isLoading)
     return <Box sx={{ p: 2, textAlign: "center" }}>Loading...</Box>;
@@ -55,7 +62,7 @@ export default function TrendSummary() {
           {view === "weekly" ? "Weekly" : "Monthly"} Averages:
         </Typography>
         {(view === "weekly" ? data.weeklyAverages : data.monthlyAverages).map(
-          (item) => (
+          (item: TrendItem) => (
             <Typography
               key={"week" in item ? item.week : item.month}
               variant="body2"

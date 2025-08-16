@@ -1,8 +1,9 @@
-// src/components/ForgotPassword.tsx
 import { useState } from "react";
 import { Box, TextField, Button, Typography, Alert } from "@mui/material";
 import { useNavigate } from "@tanstack/react-router";
 import { trpc } from "../trpc";
+import { TRPCClientErrorLike } from "@trpc/client";
+import type { AppRouter } from "../../netlify/functions/router";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
@@ -10,12 +11,12 @@ export default function ForgotPassword() {
   const [success, setSuccess] = useState("");
   const navigate = useNavigate();
 
-  const requestReset = trpc.requestPasswordReset.useMutation({
-    onSuccess: ({ message }) => {
-      setSuccess(message);
+  const requestReset = trpc.auth.requestPasswordReset.useMutation({
+    onSuccess: (data: { message: string }) => {
+      setSuccess(data.message);
       setError("");
     },
-    onError: (err) => {
+    onError: (err: TRPCClientErrorLike<AppRouter>) => {
       setError(err.message);
       setSuccess("");
     },

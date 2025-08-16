@@ -1,9 +1,10 @@
-// src/components/Login.tsx
 import { useState } from "react";
 import { Box, Button, TextField, Typography } from "@mui/material";
 import { useNavigate } from "@tanstack/react-router";
 import { useAuth } from "../context/AuthContext";
 import { trpc } from "../trpc";
+import { TRPCClientErrorLike } from "@trpc/client";
+import type { AppRouter } from "../../netlify/functions/router"; // Adjusted path based on project structure
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -12,8 +13,12 @@ export default function Login() {
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  const loginMutation = trpc.login.useMutation({
-    onSuccess: (data: { token: string; user: { id: string; email: string } }) => {
+  // Corrected from trpc.auth.download to trpc.auth.login
+  const loginMutation = trpc.auth.login.useMutation({
+    onSuccess: (data: {
+      token: string;
+      user: { id: string; email: string };
+    }) => {
       console.log("Login success:", { email, token: data.token });
       login(data.token, { id: data.user.id, email: data.user.email });
       setEmail("");
@@ -21,8 +26,13 @@ export default function Login() {
       setError("");
       navigate({ to: "/" });
     },
-    onError: (err: any) => {
-      console.error("Login error:", err, { email, password });
+    onError: (err: TRPCClientErrorLike<AppRouter>) => {
+      console.error("Login error:", {
+        message: err.message,
+        data: err.data,
+        email,
+        password,
+      });
       setError(
         err.message || "Login failed. Please check your email and password."
       );

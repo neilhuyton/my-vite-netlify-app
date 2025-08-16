@@ -1,4 +1,3 @@
-// src/components/WeightList.tsx
 import { useState } from "react";
 import {
   Box,
@@ -18,28 +17,32 @@ import {
   MenuItem,
 } from "@mui/material";
 import { trpc, queryClient } from "../trpc";
+import { TRPCClientErrorLike } from "@trpc/client";
+import type { AppRouter } from "../../netlify/functions/router";
+
+type WeightMeasurement = { id: string; weightKg: number; createdAt: string; note?: string | null };
+type GetWeightsResponse = { measurements: WeightMeasurement[] };
 
 export default function WeightList() {
   const [weightToDelete, setWeightToDelete] = useState<string | null>(null);
   const [timeRange, setTimeRange] = useState<"30d" | "90d" | "all">("all");
 
-  const { data, isLoading, isError, error } = trpc.getWeights.useQuery(
+  const { data, isLoading, isError, error } = trpc.weight.getWeights.useQuery(
     { timeRange },
     { refetchOnWindowFocus: false }
   );
 
-  const deleteWeight = trpc.deleteWeight.useMutation({
+  const deleteWeight = trpc.weight.deleteWeight.useMutation({
     onSuccess: () => {
-      // Invalidate queries using queryClient with manual query keys
       queryClient.invalidateQueries({
-        queryKey: ["getWeights", { timeRange }],
+        queryKey: ["weight", "getWeights", { timeRange }],
       });
       queryClient.invalidateQueries({
-        queryKey: ["getWeightTrends", { timeRange }],
+        queryKey: ["trend", "getWeightTrends", { timeRange }],
       });
       setWeightToDelete(null);
     },
-    onError: (err) => {
+    onError: (err: TRPCClientErrorLike<AppRouter>) => {
       console.error("Delete weight error:", err.message);
     },
   });
@@ -90,7 +93,7 @@ export default function WeightList() {
           </TableRow>
         </TableHead>
         <TableBody>
-          {data.measurements.map((entry) => (
+          {data.measurements.map((entry: WeightMeasurement) => (
             <TableRow key={entry.id}>
               <TableCell>
                 {new Date(entry.createdAt).toLocaleDateString()}

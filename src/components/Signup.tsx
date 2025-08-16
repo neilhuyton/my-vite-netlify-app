@@ -1,8 +1,9 @@
-// src/components/Signup.tsx
 import { useState } from "react";
 import { Box, TextField, Button, Typography, Alert } from "@mui/material";
 import { useNavigate } from "@tanstack/react-router";
 import { trpc } from "../trpc";
+import { TRPCClientErrorLike } from "@trpc/client";
+import type { AppRouter } from "../../netlify/functions/router";
 
 export default function Signup() {
   const [email, setEmail] = useState("");
@@ -11,12 +12,13 @@ export default function Signup() {
   const [success, setSuccess] = useState("");
   const navigate = useNavigate();
 
-  const signupMutation = trpc.signup.useMutation({
-    onSuccess: ({ message }) => {
-      setSuccess(message);
+  const signupMutation = trpc.auth.signup.useMutation({
+    onSuccess: (data: { message: string }) => {
+      setSuccess(data.message);
       setError("");
+      setTimeout(() => navigate({ to: "/verify-email" }), 2000);
     },
-    onError: (err) => {
+    onError: (err: TRPCClientErrorLike<AppRouter>) => {
       setError(err.message);
       setSuccess("");
     },

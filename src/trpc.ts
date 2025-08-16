@@ -1,6 +1,7 @@
+// src/trpc.ts
 import { createTRPCReact } from "@trpc/react-query";
-import { httpLink } from "@trpc/client";
-import type { AppRouter } from "netlify/functions/trpc";
+import { httpBatchLink } from "@trpc/client";
+import type { AppRouter } from "../netlify/functions/router"; // Correct import path
 import { QueryClient } from "@tanstack/react-query";
 
 export const trpc = createTRPCReact<AppRouter>();
@@ -9,7 +10,7 @@ export const queryClient = new QueryClient();
 export const createTRPCClient = (token: string | null, logout: () => void) => {
   return trpc.createClient({
     links: [
-      httpLink({
+      httpBatchLink({
         url: import.meta.env.VITE_API_URL || "/api/trpc",
         headers: () => ({
           Authorization: token ? `Bearer ${token}` : undefined,
@@ -17,9 +18,7 @@ export const createTRPCClient = (token: string | null, logout: () => void) => {
         }),
         fetch: async (url, options) => {
           console.log("tRPC request:", { url, options });
-          // Convert url to string for includes check
           const urlString = typeof url === "string" ? url : url.toString();
-          // Determine method based on procedure type
           const isQuery =
             urlString.includes("getWeightTrends") ||
             urlString.includes("getWeights") ||
@@ -33,7 +32,6 @@ export const createTRPCClient = (token: string | null, logout: () => void) => {
               "Content-Type": "application/json",
               ...(token ? { Authorization: `Bearer ${token}` } : {}),
             },
-            // For GET requests, omit body
             body: method === "GET" ? undefined : options?.body,
           });
           const responseText = await response.text();
@@ -51,11 +49,7 @@ export const createTRPCClient = (token: string | null, logout: () => void) => {
               headers: response.headers,
             });
           } catch (error) {
-            console.error(
-              "Failed to parse response as JSON:",
-              error,
-              responseText
-            );
+            console.error("Failed to parse response as JSON:", error, responseText);
             throw error;
           }
         },

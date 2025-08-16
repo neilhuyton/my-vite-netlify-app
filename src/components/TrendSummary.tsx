@@ -1,30 +1,38 @@
+import { useEffect, useState } from "react";
 import { Box, Typography, Paper, Select, MenuItem } from "@mui/material";
-import { useState } from "react";
 import { trpc } from "../trpc";
-import { useAuth } from "../context/AuthContext";
+import { useStore } from "../store";
 
-type TrendItem = { week?: string; month?: string; averageWeightKg: number };
+type TrendItem = { week?: string; month?: string; averageWeightKg: number; date?: string };
 type GetWeightTrendsResponse = {
   weeklyAverages: TrendItem[];
   monthlyAverages: TrendItem[];
-  rateOfChange?: number;
+  rateOfChange?: number | null;
+  trendSlope?: number | null;
+  trendPoints?: { x: string; y: number }[];
 };
 
 export default function TrendSummary() {
-  const { user } = useAuth();
+  const { user, setTrends } = useStore();
   const [view, setView] = useState<"weekly" | "monthly">("weekly");
   const [timeRange, setTimeRange] = useState<"30d" | "90d" | "all">("all");
-  const { data, isLoading, isError, error } =
-    trpc.trend.getWeightTrends.useQuery(
-      { timeRange },
-      { enabled: !!user?.token }
-    );
+  const { data, isLoading, isError, error } = trpc.trend.getWeightTrends.useQuery(
+    { timeRange },
+    { enabled: !!user?.token }
+  );
+
+  // Update Zustand store when data is fetched
+  useEffect(() => {
+    if (data) {
+      setTrends(data);
+    }
+  }, [data, setTrends]);
 
   if (isLoading)
     return <Box sx={{ p: 2, textAlign: "center" }}>Loading...</Box>;
   if (isError)
     return <Box sx={{ p: 2, textAlign: "center" }}>Error: {error.message}</Box>;
-  if (!data?.weeklyAverages.length)
+  if (!data?.weeklyAverages?.length)
     return <Box sx={{ p: 2, textAlign: "center" }}>No data</Box>;
 
   return (
@@ -54,7 +62,7 @@ export default function TrendSummary() {
       <Paper sx={{ p: 2 }}>
         <Typography variant="body1" sx={{ mb: 1 }}>
           Rate of Change:{" "}
-          {data.rateOfChange
+          {data.rateOfChange !== undefined && data.rateOfChange !== null
             ? `${data.rateOfChange.toFixed(2)} kg/week`
             : "N/A"}
         </Typography>
@@ -68,7 +76,7 @@ export default function TrendSummary() {
               variant="body2"
               sx={{ ml: 2 }}
             >
-              {"week" in item ? item.week : item.month}:{" "}
+              {("week" in item ? item.week : item.month) || item.date || "Unknown"}:{" "}
               {item.averageWeightKg.toFixed(1)} kg
             </Typography>
           )

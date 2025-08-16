@@ -4,6 +4,7 @@ import { useTheme } from "@mui/material/styles";
 import ScaleIcon from "@mui/icons-material/Scale";
 import ShowChartIcon from "@mui/icons-material/ShowChart";
 import FlagIcon from "@mui/icons-material/Flag";
+import PersonIcon from "@mui/icons-material/Person"; // Add PersonIcon for profile
 
 interface SidebarProps {
   mobileOpen: boolean;
@@ -24,6 +25,7 @@ export default function Sidebar({ mobileOpen, onDrawerToggle, locationPathname, 
           { text: "List", path: "/list", icon: <ScaleIcon /> },
           { text: "Graph", path: "/graph", icon: <ShowChartIcon /> },
           { text: "Goal", path: "/goal", icon: <FlagIcon /> },
+          { text: "Profile", path: "/profile", icon: <PersonIcon /> }, // Add Profile link
         ].map((item) => (
           <ListItemButton
             key={item.text}

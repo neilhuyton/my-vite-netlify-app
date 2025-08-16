@@ -13,6 +13,7 @@ import VerifyEmail from "./components/VerifyEmail";
 import ForgotPassword from "./components/ForgotPassword";
 import ResetPassword from "./components/ResetPassword";
 import GoalContent from "./components/GoalContent";
+import Profile from "./components/Profile"; // Import Profile
 import { AuthenticatedRoute } from "./components/AuthenticatedRoute";
 import { AppContent } from "./components/AppContent";
 import MainContent from "./components/MainContent";
@@ -76,6 +77,19 @@ const goalRoute = createRoute({
   },
 });
 
+const profileRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/profile",
+  component: () => {
+    console.log("router.tsx: Rendering profile route");
+    return (
+      <AuthenticatedRoute>
+        <Profile />
+      </AuthenticatedRoute>
+    );
+  },
+});
+
 const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/login",
@@ -134,6 +148,7 @@ const routeTree = rootRoute.addChildren([
   listRoute,
   graphRoute,
   goalRoute,
+  profileRoute, // Add profile route
   loginRoute,
   signupRoute,
   verifyEmailRoute,

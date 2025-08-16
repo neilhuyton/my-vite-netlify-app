@@ -4,19 +4,15 @@ import { Box, Typography, Button, Snackbar, Alert } from "@mui/material";
 import { useNavigate } from "@tanstack/react-router";
 import { useAuth } from "../context/AuthContext";
 import WeightForm from "./WeightForm";
-import DeleteAccountDialog from "./DeleteAccountDialog";
 import { useWeightMutations } from "../hooks/useWeightMutations";
-import { useAccountMutations } from "../hooks/useAccountMutations";
 
 export default function MainContent() {
   const [weight, setWeight] = useState("");
   const [note, setNote] = useState("");
   const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const { addWeight, error, setError } = useWeightMutations();
-  const { deleteAccount, error: deleteError } = useAccountMutations();
 
   const handleSubmit = (value: string, note?: string) => {
     const weightValue = parseFloat(value);
@@ -44,14 +40,11 @@ export default function MainContent() {
           >
             Logout
           </Button>
-          <Button color="error" onClick={() => setOpenDeleteDialog(true)}>
-            Delete Account
-          </Button>
         </Box>
       </Box>
-      {(error || deleteError) && (
+      {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
-          {error || deleteError}
+          {error}
         </Alert>
       )}
       <WeightForm
@@ -64,14 +57,6 @@ export default function MainContent() {
         isSuccess={addWeight.isSuccess}
         successMessage={addWeight.data?.message}
         onSubmit={handleSubmit}
-      />
-      <DeleteAccountDialog
-        open={openDeleteDialog}
-        onClose={() => setOpenDeleteDialog(false)}
-        onConfirm={() => {
-          setOpenDeleteDialog(false);
-          deleteAccount.mutate();
-        }}
       />
       <Snackbar
         open={snackbarOpen || addWeight.isSuccess}

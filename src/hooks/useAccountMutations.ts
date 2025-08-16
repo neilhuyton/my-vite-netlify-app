@@ -1,32 +1,38 @@
 // src/hooks/useAccountMutations.ts
-import { useState } from "react";
-import { useNavigate } from "@tanstack/react-router";
-import { useStore } from "../store";
 import { trpc } from "../trpc";
-import type { TRPCClientErrorLike } from "@trpc/client";
-import type { AppRouter } from "../../netlify/functions/router";
+import { useNavigate } from "@tanstack/react-router";
+import { useAuth } from "../context/AuthContext";
 
-export const useAccountMutations = () => {
-  const [error, setError] = useState("");
-  const { clearUser } = useStore();
+export function useAccountMutations() {
   const navigate = useNavigate();
+  const { logout } = useAuth();
 
-  const deleteAccount = trpc.auth.deleteAccount.useMutation({
+  const deleteAccount = trpc.account.deleteAccount.useMutation({
     onSuccess: () => {
-      setError("");
-      clearUser();
+      logout();
       navigate({ to: "/login" });
     },
-    onError: (err: TRPCClientErrorLike<AppRouter>) => {
-      if (err.data?.code === "UNAUTHORIZED") {
-        setError("Session expired. Please log in again.");
-        clearUser();
-        navigate({ to: "/login" });
-      } else {
-        setError("Failed to delete account: " + err.message);
-      }
+    onError: (error) => {
+      return error.message || "Failed to delete account";
     },
   });
 
-  return { deleteAccount, error, setError };
-};
+  const updatePassword = trpc.account.updatePassword.useMutation({
+    onError: (error) => {
+      return error.message || "Failed to update password";
+    },
+  });
+
+  const updateEmail = trpc.account.updateEmail.useMutation({
+    onError: (error) => {
+      return error.message || "Failed to update email";
+    },
+  });
+
+  return {
+    deleteAccount,
+    updatePassword,
+    updateEmail,
+    error: deleteAccount.error?.message || updatePassword.error?.message || updateEmail.error?.message,
+  };
+}

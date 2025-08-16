@@ -15,6 +15,8 @@ export const handler = async (event: HandlerEvent, context: HandlerContext) => {
     Object.entries(event.headers || {}).filter(([, value]) => value !== undefined)
   ) as Record<string, string>;
 
+  console.log("Netlify function headers:", headers);
+
   const queryString = event.queryStringParameters
     ? new URLSearchParams(
         Object.fromEntries(
@@ -36,7 +38,10 @@ export const handler = async (event: HandlerEvent, context: HandlerContext) => {
       endpoint: "/api/trpc",
       req: new Request(url, {
         method: event.httpMethod,
-        headers,
+        headers: {
+          ...headers,
+          Authorization: headers.authorization || "",
+        },
         body: event.httpMethod !== "GET" ? JSON.stringify(body) : undefined,
       }),
       router: appRouter,
@@ -78,11 +83,18 @@ function parseBody(event: HandlerEvent) {
 }
 
 function extractUser(authHeader?: string): UserContext | undefined {
-  if (!authHeader?.startsWith("Bearer ")) return undefined;
+  if (!authHeader?.startsWith("Bearer ")) {
+    console.log("No Bearer token found in Authorization header");
+    return undefined;
+  }
+  const token = authHeader.split(" ")[1];
+  console.log("JWT token:", token);
   try {
-    return jwt.verify(authHeader.split(" ")[1], config.JWT_SECRET) as UserContext;
-  } catch {
-    console.error("JWT verification failed");
+    const user = jwt.verify(token, config.JWT_SECRET) as UserContext;
+    console.log("JWT verified, user:", user);
+    return user;
+  } catch (error) {
+    console.error("JWT verification failed:", error);
     return undefined;
   }
 }

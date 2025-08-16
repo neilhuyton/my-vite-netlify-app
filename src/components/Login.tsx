@@ -1,26 +1,23 @@
+// src/components/Login.tsx
 import { useState } from "react";
 import { Box, Button, TextField, Typography } from "@mui/material";
 import { useNavigate } from "@tanstack/react-router";
-import { useAuth } from "../context/AuthContext";
+import { useStore } from "../store";
 import { trpc } from "../trpc";
 import { TRPCClientErrorLike } from "@trpc/client";
-import type { AppRouter } from "../../netlify/functions/router"; // Adjusted path based on project structure
+import type { AppRouter } from "../../netlify/functions/router";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { setUser } = useStore();
 
-  // Corrected from trpc.auth.download to trpc.auth.login
   const loginMutation = trpc.auth.login.useMutation({
-    onSuccess: (data: {
-      token: string;
-      user: { id: string; email: string };
-    }) => {
+    onSuccess: (data: { token: string; user: { id: string; email: string } }) => {
       console.log("Login success:", { email, token: data.token });
-      login(data.token, { id: data.user.id, email: data.user.email });
+      setUser({ email: data.user.email, token: data.token });
       setEmail("");
       setPassword("");
       setError("");
@@ -91,6 +88,18 @@ export default function Login() {
         disabled={loginMutation.isPending}
       >
         {loginMutation.isPending ? "Logging in..." : "Login"}
+      </Button>
+      <Button
+        onClick={() => navigate({ to: "/signup" })}
+        sx={{ mt: 1, display: "block" }}
+      >
+        Sign Up
+      </Button>
+      <Button
+        onClick={() => navigate({ to: "/forgot-password" })}
+        sx={{ mt: 1, display: "block" }}
+      >
+        Forgot Password
       </Button>
     </Box>
   );

@@ -1,7 +1,6 @@
 // netlify/functions/routers/trend.ts
-import { t, TRPCContext, protectedProcedure } from "../auth";
+import { t, protectedProcedure } from "../auth";
 import { z } from "zod";
-import { prisma } from "../config";
 import { sendEmail } from "../email";
 
 export const trendRouter = t.router({

@@ -1,4 +1,5 @@
-import { useState } from "react";
+// src/components/WeightList.tsx
+import { useState, useEffect } from "react";
 import {
   Box,
   Typography,
@@ -16,8 +17,10 @@ import {
   Select,
   MenuItem,
 } from "@mui/material";
+import { useNavigate } from "@tanstack/react-router";
 import { trpc, queryClient } from "../trpc";
 import { TRPCClientErrorLike } from "@trpc/client";
+import { useStore } from "../store";
 import type { AppRouter } from "../../netlify/functions/router";
 
 type WeightMeasurement = { id: string; weightKg: number; createdAt: string; note?: string | null };
@@ -26,14 +29,27 @@ type GetWeightsResponse = { measurements: WeightMeasurement[] };
 export default function WeightList() {
   const [weightToDelete, setWeightToDelete] = useState<string | null>(null);
   const [timeRange, setTimeRange] = useState<"30d" | "90d" | "all">("all");
+  const { user, setMeasurements, clearUser } = useStore();
+  const navigate = useNavigate();
 
   const { data, isLoading, isError, error } = trpc.weight.getWeights.useQuery(
     { timeRange },
-    { refetchOnWindowFocus: false }
+    { enabled: !!user?.token, refetchOnWindowFocus: false }
   );
 
   const deleteWeight = trpc.weight.deleteWeight.useMutation({
-    onSuccess: () => {
+    onError: (err: TRPCClientErrorLike<AppRouter>) => {
+      if (err.data?.code === "UNAUTHORIZED") {
+        clearUser();
+        navigate({ to: "/login" });
+      } else {
+        console.error("Delete weight error:", err.message);
+      }
+    },
+  });
+
+  useEffect(() => {
+    if (deleteWeight.isSuccess) {
       queryClient.invalidateQueries({
         queryKey: ["weight", "getWeights", { timeRange }],
       });
@@ -41,11 +57,21 @@ export default function WeightList() {
         queryKey: ["trend", "getWeightTrends", { timeRange }],
       });
       setWeightToDelete(null);
-    },
-    onError: (err: TRPCClientErrorLike<AppRouter>) => {
-      console.error("Delete weight error:", err.message);
-    },
-  });
+    }
+  }, [deleteWeight.isSuccess, timeRange]);
+
+  useEffect(() => {
+    if (data?.measurements) {
+      setMeasurements(data.measurements);
+    }
+  }, [data, setMeasurements]);
+
+  useEffect(() => {
+    if (isError && error?.data?.code === "UNAUTHORIZED") {
+      clearUser();
+      navigate({ to: "/login" });
+    }
+  }, [isError, error, clearUser, navigate]);
 
   const handleDeleteClick = (id: string) => {
     setWeightToDelete(id);
@@ -115,7 +141,6 @@ export default function WeightList() {
           ))}
         </TableBody>
       </Table>
-
       <Dialog
         open={!!weightToDelete}
         onClose={handleCancelDelete}
@@ -125,8 +150,7 @@ export default function WeightList() {
         <DialogTitle id="delete-weight-title">Delete Weight</DialogTitle>
         <DialogContent>
           <DialogContentText id="delete-weight-description">
-            Are you sure you want to delete this weight entry? This action
-            cannot be undone.
+            Are you sure you want to delete this weight entry? This action cannot be undone.
           </DialogContentText>
         </DialogContent>
         <DialogActions>

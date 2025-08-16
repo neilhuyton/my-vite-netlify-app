@@ -14,16 +14,17 @@ export function AuthenticatedRoute({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!user && pathname !== "/login") {
       console.log("AuthenticatedRoute.tsx: User not authenticated, redirecting to /login");
-      navigate({ to: "/login" });
+      navigate({ to: "/login", search: { from: pathname } });
     } else if (user) {
       console.log("AuthenticatedRoute.tsx: User authenticated, rendering children");
     }
   }, [user, navigate, pathname]);
 
   if (!user) {
-    console.log("AuthenticatedRoute.tsx: Rendering loading state");
-    return <div>Loading...</div>;
+    console.log("AuthenticatedRoute.tsx: User not authenticated, returning null");
+    return null; // Prevent rendering children until redirect
   }
 
-  return <>{children}</>;
+  console.log("AuthenticatedRoute.tsx: Rendering children");
+  return <div data-testid="authenticated-route">{children}</div>;
 }

@@ -15,6 +15,7 @@ import ResetPassword from "./components/ResetPassword";
 import GoalContent from "./components/GoalContent";
 import { AuthenticatedRoute } from "./components/AuthenticatedRoute";
 import { AppContent } from "./components/AppContent";
+import MainContent from "./components/MainContent";
 
 const rootRoute = createRootRoute({
   component: () => {
@@ -30,8 +31,7 @@ const indexRoute = createRoute({
     console.log("router.tsx: Rendering index route");
     return (
       <AuthenticatedRoute>
-        <WeightList />
-        <WeightChart />
+        <MainContent />
       </AuthenticatedRoute>
     );
   },

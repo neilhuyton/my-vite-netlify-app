@@ -1,10 +1,8 @@
-// src/components/AppContent.tsx
 import { useState, useMemo, Component, ReactNode } from "react";
 import { Box, Toolbar } from "@mui/material";
 import { Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import Sidebar from "./Sidebar";
 import AppHeader from "./AppHeader";
-import MainContent from "./MainContent";
 import { useAuth } from "../context/AuthContext";
 import { trpc, createTRPCClient, queryClient } from "../trpc";
 
@@ -70,11 +68,10 @@ export const AppContent = () => {
             }}
           >
             <Toolbar />
-            <MainContent />
-            <Outlet />
+            <Outlet /> {/* Only render child routes */}
           </Box>
         </Box>
       </trpc.Provider>
     </ErrorBoundary>
   );
-}
+};

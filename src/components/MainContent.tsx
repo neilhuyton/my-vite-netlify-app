@@ -4,7 +4,6 @@ import { Box, Typography, Button, Snackbar, Alert } from "@mui/material";
 import { useNavigate } from "@tanstack/react-router";
 import { useAuth } from "../context/AuthContext";
 import WeightForm from "./WeightForm";
-import TrendSummary from "./TrendSummary";
 import DeleteAccountDialog from "./DeleteAccountDialog";
 import { useWeightMutations } from "../hooks/useWeightMutations";
 import { useAccountMutations } from "../hooks/useAccountMutations";
@@ -17,7 +16,7 @@ export default function MainContent() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const { addWeight, error, setError } = useWeightMutations();
-  const { deleteAccount, error: deleteError, setError: setDeleteError } = useAccountMutations();
+  const { deleteAccount, error: deleteError } = useAccountMutations();
 
   const handleSubmit = (value: string, note?: string) => {
     const weightValue = parseFloat(value);
@@ -66,7 +65,6 @@ export default function MainContent() {
         successMessage={addWeight.data?.message}
         onSubmit={handleSubmit}
       />
-      <TrendSummary />
       <DeleteAccountDialog
         open={openDeleteDialog}
         onClose={() => setOpenDeleteDialog(false)}

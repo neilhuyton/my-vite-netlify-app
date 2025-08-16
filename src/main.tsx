@@ -1,31 +1,35 @@
-// src/main.tsx
+// src/Root.tsx
 import React, { useState, useMemo } from "react";
 import ReactDOM from "react-dom/client";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import { ThemeContext } from "./context/ThemeContext";
-import { Root } from "./Root";
+import { App } from "./App";
 import "./index.css";
 
+console.log("main.tsx: Initializing");
+
 const getInitialTheme = (): "light" | "dark" => {
+  console.log("main.tsx: Getting initial theme");
   const savedTheme = localStorage.getItem("theme");
   return savedTheme === "dark" ? "dark" : "light";
 };
 
 const AppWrapper = () => {
-  const [themeMode, setThemeMode] = useState<"light" | "dark">(
-    getInitialTheme()
-  );
+  console.log("main.tsx: Rendering AppWrapper");
+  const [themeMode, setThemeMode] = useState<"light" | "dark">(getInitialTheme());
 
   const toggleTheme = () => {
+    console.log("main.tsx: Toggling theme");
     const newMode = themeMode === "light" ? "dark" : "light";
     setThemeMode(newMode);
     localStorage.setItem("theme", newMode);
   };
 
   const theme = useMemo(
-    () =>
-      createTheme({
+    () => {
+      console.log("main.tsx: Creating theme");
+      return createTheme({
         palette: {
           mode: themeMode,
           ...(themeMode === "light"
@@ -94,7 +98,8 @@ const AppWrapper = () => {
             },
           },
         },
-      }),
+      });
+    },
     [themeMode]
   );
 
@@ -103,11 +108,13 @@ const AppWrapper = () => {
       <ThemeContext.Provider value={{ toggleTheme }}>
         <ThemeProvider theme={theme}>
           <CssBaseline />
-          <Root />
+          <App />
         </ThemeProvider>
       </ThemeContext.Provider>
     </React.StrictMode>
   );
 };
 
+console.log("main.tsx: Creating root");
 ReactDOM.createRoot(document.getElementById("root")!).render(<AppWrapper />);
+console.log("main.tsx: Render initiated");

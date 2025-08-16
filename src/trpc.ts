@@ -14,7 +14,7 @@ export const queryClient = new QueryClient({
 
 export const trpc = createTRPCReact<AppRouter>();
 
-export const createTRPCClient = (token: string | null, logout: () => void) => {
+export const createTRPCClient = (token: string | null, onUnauthorized: () => void) => {
   return trpc.createClient({
     links: [
       httpBatchLink({
@@ -35,8 +35,8 @@ export const createTRPCClient = (token: string | null, logout: () => void) => {
           const responseText = await response.text();
           console.log("tRPC response:", { status: response.status, body: responseText });
           if (response.status === 401) {
-            console.log("Unauthorized response, triggering logout");
-            logout();
+            console.log("tRPC: Received 401 Unauthorized");
+            onUnauthorized();
             throw new Error("UNAUTHORIZED");
           }
           if (!response.ok) {

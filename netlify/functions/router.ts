@@ -1,3 +1,4 @@
+// netlify/functions/router.ts
 import { initTRPC } from "@trpc/server";
 import { authRouter, TRPCContext } from "./routers/auth"; // Import TRPCContext
 import { weightRouter } from "./routers/weight";

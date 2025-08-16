@@ -1,8 +1,9 @@
-//src/router.tsx
+// src/router.tsx
 import {
   createRouter,
   createRootRoute,
   createRoute,
+  NotFoundRoute,
 } from "@tanstack/react-router";
 import WeightList from "./components/WeightList";
 import WeightChart from "./components/WeightChart";
@@ -12,71 +13,106 @@ import VerifyEmail from "./components/VerifyEmail";
 import ForgotPassword from "./components/ForgotPassword";
 import ResetPassword from "./components/ResetPassword";
 import { AuthenticatedRoute } from "./components/AuthenticatedRoute";
-import { App } from "./App";
+import { AppContent } from "./components/AppContent";
 
 const rootRoute = createRootRoute({
-  component: App,
+  component: () => {
+    console.log("router.tsx: Rendering root route");
+    return <AppContent />;
+  },
 });
 
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
-  component: () => (
-    <AuthenticatedRoute>
-      <WeightList />
-      <WeightChart />
-    </AuthenticatedRoute>
-  ),
+  component: () => {
+    console.log("router.tsx: Rendering index route");
+    return (
+      <AuthenticatedRoute>
+        <WeightList />
+        <WeightChart />
+      </AuthenticatedRoute>
+    );
+  },
 });
 
 const listRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/list",
-  component: () => (
-    <AuthenticatedRoute>
-      <WeightList />
-    </AuthenticatedRoute>
-  ),
+  component: () => {
+    console.log("router.tsx: Rendering list route");
+    return (
+      <AuthenticatedRoute>
+        <WeightList />
+      </AuthenticatedRoute>
+    );
+  },
 });
 
 const graphRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/graph",
-  component: () => (
-    <AuthenticatedRoute>
-      <WeightChart />
-    </AuthenticatedRoute>
-  ),
+  component: () => {
+    console.log("router.tsx: Rendering graph route");
+    return (
+      <AuthenticatedRoute>
+        <WeightChart />
+      </AuthenticatedRoute>
+    );
+  },
 });
 
 const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/login",
-  component: Login,
+  component: () => {
+    console.log("router.tsx: Rendering login route");
+    return <Login />;
+  },
 });
 
 const signupRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/signup",
-  component: Signup,
+  component: () => {
+    console.log("router.tsx: Rendering signup route");
+    return <Signup />;
+  },
 });
 
 const verifyEmailRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/verify-email",
-  component: VerifyEmail,
+  component: () => {
+    console.log("router.tsx: Rendering verify-email route");
+    return <VerifyEmail />;
+  },
 });
 
 const forgotPasswordRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/forgot-password",
-  component: ForgotPassword,
+  component: () => {
+    console.log("router.tsx: Rendering forgot-password route");
+    return <ForgotPassword />;
+  },
 });
 
 const resetPasswordRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/reset-password",
-  component: ResetPassword,
+  component: () => {
+    console.log("router.tsx: Rendering reset-password route");
+    return <ResetPassword />;
+  },
+});
+
+const notFoundRoute = new NotFoundRoute({
+  getParentRoute: () => rootRoute,
+  component: () => {
+    console.log("router.tsx: Rendering not-found route");
+    return <div>404: Page Not Found</div>;
+  },
 });
 
 const routeTree = rootRoute.addChildren([
@@ -88,6 +124,7 @@ const routeTree = rootRoute.addChildren([
   verifyEmailRoute,
   forgotPasswordRoute,
   resetPasswordRoute,
+  notFoundRoute,
 ]);
 
 export const router = createRouter({ routeTree });

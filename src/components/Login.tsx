@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Box, Button, TextField, Typography } from "@mui/material";
 import { useNavigate } from "@tanstack/react-router";
+import { useAuth } from "../context/AuthContext";
 import { useStore } from "../store";
 import { trpc } from "../trpc";
 import { TRPCClientErrorLike } from "@trpc/client";
@@ -12,11 +13,12 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const { login } = useAuth();
   const { setUser } = useStore();
-
   const loginMutation = trpc.auth.login.useMutation({
     onSuccess: (data: { token: string; user: { id: string; email: string } }) => {
-      console.log("Login success:", { email, token: data.token });
+      console.log("Login success:", { email: data.user.email, token: data.token });
+      login(data.token, { id: data.user.id, email: data.user.email });
       setUser({ email: data.user.email, token: data.token });
       setEmail("");
       setPassword("");
@@ -30,9 +32,7 @@ export default function Login() {
         email,
         password,
       });
-      setError(
-        err.message || "Login failed. Please check your email and password."
-      );
+      setError("Login failed. Please check your email and password.");
     },
   });
 

@@ -4,11 +4,12 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+  "dev": "vite",
     "build": "npx prisma generate && tsc -b tsconfig.json netlify/functions/tsconfig.json && vite build",
     "preview": "vite preview",
     "netlify": "netlify dev",
-    "seed": "npx ts-node prisma/seed.ts"
+    "seed": "npx ts-node prisma/seed.ts",
+    "deploy": "rm -rf dist netlify/functions/dist && npm run build && rm netlify/functions/dist/*.d.ts && netlify deploy --prod"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

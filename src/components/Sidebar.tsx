@@ -1,6 +1,9 @@
 // src/components/Sidebar.tsx
-import { Drawer, List, ListItem, ListItemButton, ListItemText, Toolbar } from "@mui/material";
-import { Link } from "@tanstack/react-router";
+import { Drawer, List, ListItemButton, ListItemIcon, ListItemText, Toolbar } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
+import ScaleIcon from "@mui/icons-material/Scale";
+import ShowChartIcon from "@mui/icons-material/ShowChart";
+import FlagIcon from "@mui/icons-material/Flag";
 
 interface SidebarProps {
   mobileOpen: boolean;
@@ -10,32 +13,34 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ mobileOpen, onDrawerToggle, locationPathname, drawerWidth }: SidebarProps) {
+  const theme = useTheme();
+
   const drawerContent = (
-    <div>
+    <>
       <Toolbar />
       <List>
         {[
-          { text: "Home", path: "/" },
-          { text: "List", path: "/list" },
-          { text: "Graph", path: "/graph" },
+          { text: "Weight", path: "/", icon: <ScaleIcon /> },
+          { text: "List", path: "/list", icon: <ScaleIcon /> },
+          { text: "Graph", path: "/graph", icon: <ShowChartIcon /> },
+          { text: "Goal", path: "/goal", icon: <FlagIcon /> },
         ].map((item) => (
-          <ListItem key={item.text} disablePadding>
-            <ListItemButton
-              component={Link}
-              to={item.path}
-              selected={locationPathname === item.path}
-            >
-              <ListItemText primary={item.text} />
-            </ListItemButton>
-          </ListItem>
+          <ListItemButton
+            key={item.text}
+            selected={locationPathname === item.path}
+            href={item.path}
+            sx={{ py: 1.5 }}
+          >
+            <ListItemIcon>{item.icon}</ListItemIcon>
+            <ListItemText primary={item.text} />
+          </ListItemButton>
         ))}
       </List>
-    </div>
+    </>
   );
 
   return (
     <>
-      {/* Mobile Drawer */}
       <Drawer
         variant="temporary"
         open={mobileOpen}
@@ -48,7 +53,6 @@ export default function Sidebar({ mobileOpen, onDrawerToggle, locationPathname, 
       >
         {drawerContent}
       </Drawer>
-      {/* Desktop Drawer */}
       <Drawer
         variant="permanent"
         sx={{

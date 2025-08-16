@@ -12,6 +12,7 @@ import Signup from "./components/Signup";
 import VerifyEmail from "./components/VerifyEmail";
 import ForgotPassword from "./components/ForgotPassword";
 import ResetPassword from "./components/ResetPassword";
+import GoalContent from "./components/GoalContent";
 import { AuthenticatedRoute } from "./components/AuthenticatedRoute";
 import { AppContent } from "./components/AppContent";
 
@@ -57,6 +58,19 @@ const graphRoute = createRoute({
     return (
       <AuthenticatedRoute>
         <WeightChart />
+      </AuthenticatedRoute>
+    );
+  },
+});
+
+const goalRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/goal",
+  component: () => {
+    console.log("router.tsx: Rendering goal route");
+    return (
+      <AuthenticatedRoute>
+        <GoalContent />
       </AuthenticatedRoute>
     );
   },
@@ -119,6 +133,7 @@ const routeTree = rootRoute.addChildren([
   indexRoute,
   listRoute,
   graphRoute,
+  goalRoute,
   loginRoute,
   signupRoute,
   verifyEmailRoute,

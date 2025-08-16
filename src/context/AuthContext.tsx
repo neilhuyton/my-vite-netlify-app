@@ -1,10 +1,5 @@
-import {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  ReactNode,
-} from "react";
+// src/context/AuthContext.tsx
+import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 
 interface AuthContextType {
   user: { id: string; email: string; token: string } | null;
@@ -15,11 +10,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<{
-    id: string;
-    email: string;
-    token: string;
-  } | null>(null);
+  const [user, setUser] = useState<{ id: string; email: string; token: string } | null>(null);
 
   useEffect(() => {
     const storedToken = localStorage.getItem("token");
@@ -31,9 +22,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const login = (token: string, newUser: { id: string; email: string }) => {
-    setUser({ ...newUser, token });
+    setUser({ id: newUser.id, email: newUser.email, token });
     localStorage.setItem("token", token);
-    localStorage.setItem("user", JSON.stringify(newUser));
+    localStorage.setItem("user", JSON.stringify({ id: newUser.id, email: newUser.email }));
   };
 
   const logout = () => {
@@ -51,6 +42,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
+  console.log("useAuth: Context available:", !!context);
   if (!context) throw new Error("useAuth must be used within an AuthProvider");
   return context;
 };

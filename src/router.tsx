@@ -13,16 +13,13 @@ import VerifyEmail from "./components/VerifyEmail";
 import ForgotPassword from "./components/ForgotPassword";
 import ResetPassword from "./components/ResetPassword";
 import GoalContent from "./components/GoalContent";
-import Profile from "./components/Profile"; // Import Profile
+import Profile from "./components/Profile";
 import { AuthenticatedRoute } from "./components/AuthenticatedRoute";
-import { AppContent } from "./components/AppContent";
+import { AppContent } from "./components/AppContent"; // Use named import
 import MainContent from "./components/MainContent";
 
 const rootRoute = createRootRoute({
-  component: () => {
-    console.log("router.tsx: Rendering root route");
-    return <AppContent />;
-  },
+  component: AppContent, // Use named export
 });
 
 const indexRoute = createRoute({
@@ -148,7 +145,7 @@ const routeTree = rootRoute.addChildren([
   listRoute,
   graphRoute,
   goalRoute,
-  profileRoute, // Add profile route
+  profileRoute,
   loginRoute,
   signupRoute,
   verifyEmailRoute,

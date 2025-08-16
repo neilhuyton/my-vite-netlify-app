@@ -3,7 +3,7 @@ import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 import { HandlerEvent, HandlerContext } from "@netlify/functions";
 import { appRouter, TRPCContext } from "./router";
 import { prisma } from "./config";
-import { UserContext } from "./routers/auth";
+import { UserContext } from "./auth"; // Fix import
 import jwt from "jsonwebtoken";
 import { config } from "./config";
 

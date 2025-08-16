@@ -1,20 +1,31 @@
+// src/components/VerifyEmail.tsx
 import { useEffect, useState } from "react";
 import { useSearch, useNavigate } from "@tanstack/react-router";
 import { Box, Typography, CircularProgress, Alert } from "@mui/material";
 import { trpc } from "../trpc";
+import { useAuth } from "../context/AuthContext";
 import { TRPCClientErrorLike } from "@trpc/client";
 import type { AppRouter } from "../../netlify/functions/router";
 
 export default function VerifyEmail() {
   const { token } = useSearch({ from: "/verify-email" });
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
   const verifyEmail = trpc.auth.verifyEmail.useMutation({
-    onSuccess: (data: { message: string }) => {
-      setTimeout(() => navigate({ to: "/login" }), 2000);
+    onSuccess: (data: {
+      message: string;
+      token: string;
+      email: string;
+      id: string;
+    }) => {
+      setSuccess(true);
+      login(data.token, { id: data.id, email: data.email });
+      setTimeout(() => navigate({ to: "/" }), 2000);
     },
     onError: (err: TRPCClientErrorLike<AppRouter>) => {
-      setError(err.message);
+      setError(err.message || "Failed to verify email");
     },
   });
 
@@ -32,9 +43,9 @@ export default function VerifyEmail() {
         Email Verification
       </Typography>
       {verifyEmail.isPending && <CircularProgress />}
-      {verifyEmail.isSuccess && (
+      {success && (
         <Alert severity="success">
-          Email verified successfully! Redirecting to login...
+          Email verified successfully! Redirecting to home...
         </Alert>
       )}
       {error && <Alert severity="error">{error}</Alert>}

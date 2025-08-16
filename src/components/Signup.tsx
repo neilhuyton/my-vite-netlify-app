@@ -1,5 +1,6 @@
+// src/components/Signup.tsx
 import { useState } from "react";
-import { Box, TextField, Button, Typography, Alert } from "@mui/material";
+import { Box, TextField, Button, Typography, Alert, Snackbar } from "@mui/material";
 import { useNavigate } from "@tanstack/react-router";
 import { trpc } from "../trpc";
 import { TRPCClientErrorLike } from "@trpc/client";
@@ -8,33 +9,41 @@ import type { AppRouter } from "../../netlify/functions/router";
 export default function Signup() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
   const navigate = useNavigate();
-
   const signupMutation = trpc.auth.signup.useMutation({
-    onSuccess: (data: { message: string }) => {
-      setSuccess(data.message);
+    onSuccess: () => {
+      setSnackbarOpen(true);
+      setEmail("");
+      setPassword("");
+      setConfirmPassword("");
       setError("");
-      setTimeout(() => navigate({ to: "/verify-email" }), 2000);
     },
-    onError: (err: TRPCClientErrorLike<AppRouter>) => {
-      setError(err.message);
-      setSuccess("");
-    },
+    onError: (err: TRPCClientErrorLike<AppRouter>) => setError(err.message || "Failed to sign up"),
   });
 
-  const handleSubmit = () => {
-    if (!email || !password) {
-      setError("Please fill in all fields");
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
       return;
     }
-    setError("");
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters");
+      return;
+    }
     signupMutation.mutate({ email, password });
   };
 
+  const handleSnackbarClose = () => {
+    setSnackbarOpen(false);
+    navigate({ to: "/login" });
+  };
+
   return (
-    <Box sx={{ p: 3, maxWidth: 400, mx: "auto", mt: 4 }}>
+    <Box sx={{ maxWidth: 400, mx: "auto", mt: 4 }}>
       <Typography variant="h5" sx={{ mb: 2 }}>
         Sign Up
       </Typography>
@@ -43,38 +52,53 @@ export default function Signup() {
           {error}
         </Alert>
       )}
-      {success && (
-        <Alert severity="success" sx={{ mb: 2 }}>
-          {success}
-        </Alert>
-      )}
-      <TextField
-        label="Email"
-        type="email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        fullWidth
-        sx={{ mb: 2 }}
-      />
-      <TextField
-        label="Password"
-        type="password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        fullWidth
-        sx={{ mb: 2 }}
-      />
-      <Button
-        variant="contained"
-        onClick={handleSubmit}
-        disabled={signupMutation.isPending}
-        fullWidth
+      <Box component="form" onSubmit={handleSubmit} sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        <TextField
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          label="Email"
+          variant="outlined"
+          required
+          fullWidth
+        />
+        <TextField
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          label="Password"
+          variant="outlined"
+          required
+          fullWidth
+        />
+        <TextField
+          type="password"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          label="Confirm Password"
+          variant="outlined"
+          required
+          fullWidth
+        />
+        <Button
+          type="submit"
+          variant="contained"
+          disabled={signupMutation.isPending}
+          fullWidth
+        >
+          {signupMutation.isPending ? "Signing up..." : "Sign Up"}
+        </Button>
+      </Box>
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={3000}
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       >
-        {signupMutation.isPending ? "Signing up..." : "Sign Up"}
-      </Button>
-      <Button sx={{ mt: 1 }} onClick={() => navigate({ to: "/login" })}>
-        Already have an account? Login
-      </Button>
+        <Alert onClose={handleSnackbarClose} severity="success" sx={{ width: "100%" }}>
+          Verification email sent! Please check your inbox.
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }
